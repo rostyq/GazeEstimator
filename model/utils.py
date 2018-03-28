@@ -27,9 +27,9 @@ def gather_eye_data(path, eye='right'):
         gazes.extend(matfile['data'][eye][0, 0]['gaze'][0, 0])
     
     indices = np.array(indices)
-    images = np.array(images).reshape((-1, 36, 60, 1))
-    poses = np.array(poses)
-    gazes = np.array(gazes)
+    images = np.array(images).reshape((-1, 36, 60, 1)).astype(np.float32) / 255
+    poses = np.array(poses).astype(np.float32)
+    gazes = np.array(gazes).astype(np.float32)
     
     return indices, images, poses, gazes
 
@@ -72,6 +72,7 @@ def gather_data(path):
     for left, right in zip(data[0], data[1]):
         stack_eyes_data(left, right)
 
+        
 def gaze3Dto2D(array, stack=True):
     """
     theta = asin(-y)
@@ -90,21 +91,33 @@ def gaze3Dto2D(array, stack=True):
     if not stack:
         return theta, phi
     elif stack:
-        return np.stack((theta, phi)).T
+        return np.column_stack((theta, phi))
     
     
-def gaze2Dto3D(array, z=-1.0):
-    # TODO implement gaze 2D to 3D
-    theta = array[:, 0]
-    phi = array[:, 1]
+def gaze2Dto3D(array):
+    """
+    x = (-1) * cos(theta) * sin(phi) 
+    y = (-1) * sin(theta)
+    z = (-1) * cos(theta) * cos(phi)
+    """
+    if array.ndim == 2:
+        assert array.shape[1] == 2
+        theta, phi = (array[:, i] for i in range(2))
+    elif array.ndim == 1:
+        assert array.shape[0] == 2
+        theta, phi = (array[i] for i in range(2))
     
-    pass
+    x = (-1) * np.cos(theta) * np.sin(phi)
+    y = (-1) * np.sin(theta)
+    z = (-1) * np.cos(theta) * np.cos(phi)
+
+    return np.column_stack((x, y, z))
 
 
 def pose3Dto2D(array):
     """
     M = Rodrigues((x,y,z))
-    Zv = (the third column of M) ???
+    Zv = (the third column of M)
     theta = asin(Zv[1])
     phi = atan2(Zv[0], Zv[2])
     """
@@ -116,16 +129,6 @@ def pose3Dto2D(array):
         return np.array([theta, phi])
     
     return np.apply_along_axis(convert_pose, 1, array)
-
-
-
-def pose2Dto3D(array):
-    # TODO implement pose 2D to 3D
-    pass
-
-
-def euclidean_dist(x, y):
-    return np.sum(((x - y)**2), axis=-1)
 
 
 def angle_accuracy(target, predicted):
