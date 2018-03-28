@@ -105,6 +105,7 @@ ENV/
 
 # dataset
 /model/dataset/
+/model/MPIIGaze/
 
 # tensor board log
 /model/Log/

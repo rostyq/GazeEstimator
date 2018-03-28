@@ -3,6 +3,9 @@ from scipy.io import loadmat
 import glob
 from cv2 import Rodrigues
 from tqdm import tqdm
+from keras import backend as K
+import tensorflow as tf
+
 
 def gather_eye_data(path, eye='right'):
     
@@ -123,3 +126,31 @@ def pose2Dto3D(array):
 
 def euclidean_dist(x, y):
     return np.sum(((x - y)**2), axis=-1)
+
+
+def angle_accuracy(target, predicted):
+
+    def to_vector(array):
+        
+        x = (-1)*K.cos(array[:, 0]) * K.sin(array[:, 1])
+        y = (-1)*K.sin(array[:, 0])
+        z = (-1)*K.cos(array[:, 0]) * K.cos(array[:, 1])
+        
+        return (x, y, z)
+    
+    def calc_norm(vector):
+        x, y, z = vector
+        return K.sqrt(K.square(x) + K.square(y) + K.square(z))
+    
+    def calc_angle(vector1, vector2):
+        
+        x1, y1, z1 = vector1
+        x2, y2, z2 = vector2
+        norm1, norm2 = calc_norm(vector1), calc_norm(vector2)
+
+        return (x1*x2 + y1*y2 + z1*z2) / (norm1*norm2)
+    
+    v1, v2 = to_vector(target), to_vector(predicted)
+    angle_value = calc_angle(v1, v2)
+    
+    return K.mean(tf.acos(angle_value) * 180 / 3.1415926)
