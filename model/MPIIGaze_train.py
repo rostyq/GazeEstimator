@@ -6,7 +6,6 @@ from sklearn.model_selection import train_test_split
 import os
 
 # If there is no dataset and utils:
-# TODO bash command (maybe be crossplatform?)
 if 'utils.py' not in os.listdir():
     os.system('wget https://raw.githubusercontent.com/rostyslavb/GazeEstimator/model/model/utils.py')
 if 'MPIIGaze' not in os.listdir():

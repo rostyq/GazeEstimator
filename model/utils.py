@@ -9,6 +9,7 @@ try:
 except ModuleNotFoundError:
     pass
 
+
 def print_shapes(titles, items):
     for title, item in zip(titles, items):
         print((title + ':').ljust(15) + str(item.shape))
@@ -125,9 +126,9 @@ def pose3Dto2D(array):
     def convert_pose(vect):
         M, _ = Rodrigues(np.array(vect).astype(np.float32))
         Zv = M[:, 2]
-        theta = np.arctan2(Zv[0], Zv[2])
-        phi = np.arcsin(Zv[1])
-        return np.array([theta, phi])
+        theta = np.arcsin(Zv[1])
+        phi = np.arctan2(Zv[0], Zv[2])
+        return np.array([phi, theta])
     
     return np.apply_along_axis(convert_pose, 1, array)
 
