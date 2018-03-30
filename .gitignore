@@ -110,4 +110,5 @@ ENV/
 # tensor board log
 /model/Log/
 
-*.h5
+#dataset
+/dataset gathering/Data/
