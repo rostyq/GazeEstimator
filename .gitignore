@@ -109,3 +109,6 @@ ENV/
 
 # tensor board log
 /model/Log/
+
+#dataset
+/dataset gathering/Data/
