@@ -3,13 +3,17 @@
 import pandas as pd
 from utils import *
 from sklearn.model_selection import train_test_split
-import sys
+import os
 
 # If there is no dataset and utils:
 # TODO bash command (maybe be crossplatform?)
-# get_ipython().system('wget https://raw.githubusercontent.com/rostyslavb/GazeEstimator/master/model/utils.py')
-# get_ipython().system('wget http://datasets.d2.mpi-inf.mpg.de/MPIIGaze/MPIIGaze.tar.gz')
-# get_ipython().system('tar -xzfv MPIIGaze.tar.gz')
+if 'utils.py' not in os.listdir():
+    os.system('wget https://raw.githubusercontent.com/rostyslavb/GazeEstimator/master/model/utils.py')
+if 'MPIIGaze' not in os.listdir():
+    if 'MPIIGaze.tar.gz' not in os.listdir():
+        os.system('wget http://datasets.d2.mpi-inf.mpg.de/MPIIGaze/MPIIGaze.tar.gz')
+    os.system('tar -xzfv MPIIGaze.tar.gz')
+    os.system('rm MPIIGaze.tar.gz')
 
 # ## Prepare data
 

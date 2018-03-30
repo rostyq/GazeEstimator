@@ -2,10 +2,12 @@ import numpy as np
 from scipy.io import loadmat
 import glob
 from cv2 import Rodrigues
-from tqdm import tqdm
 from keras import backend as K
 import tensorflow as tf
-from tqdm import tqdm
+try:
+    from tqdm import tqdm
+except ModuleNotFoundError:
+    pass
 
 def print_shapes(titles, items):
     for title, item in zip(titles, items):
@@ -21,7 +23,11 @@ def gather_eye_data(path, eye='right'):
     images = []
     poses = []
     gazes = []
-    for file in tqdm(mat_files):
+    try:
+        mat_files = tqdm(mat_files)
+    except NameError:
+        pass
+    for file in mat_files:
         matfile = loadmat(file)
         
         file_idx = file.split('/')[-2], file.split('/')[-1].split('.')[0]
