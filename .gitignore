@@ -109,3 +109,5 @@ ENV/
 
 # tensor board log
 /model/Log/
+
+*.h5

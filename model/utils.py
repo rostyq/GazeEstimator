@@ -5,6 +5,11 @@ from cv2 import Rodrigues
 from tqdm import tqdm
 from keras import backend as K
 import tensorflow as tf
+from tqdm import tqdm
+
+def print_shapes(titles, items):
+    for title, item in zip(titles, items):
+        print((title + ':').ljust(15) + str(item.shape))
 
 
 def gather_eye_data(path, eye='right'):
@@ -61,16 +66,6 @@ def gather_all_data(path):
     pose = np.stack(tuple(pose.values())).reshape((-1, 3))
     gaze = np.stack(tuple(gaze.values())).reshape((-1, 3))
     return index, image, pose, gaze
-
-
-def stack_eyes_data(left_array, right_array):
-    return np.stack((left_array, right_array)).T.flatten()
-
-
-def gather_data(path):
-    data = (gather_eye_data(path, eye=eye) for eye in ['right', 'left'])
-    for left, right in zip(data[0], data[1]):
-        stack_eyes_data(left, right)
 
         
 def gaze3Dto2D(array, stack=True):
@@ -131,29 +126,32 @@ def pose3Dto2D(array):
     return np.apply_along_axis(convert_pose, 1, array)
 
 
-def angle_accuracy(target, predicted):
+# functions for keras model
+# work only with tensors
 
+def calc_angle(vector1, vector2):
     def to_vector(array):
-        
-        x = (-1)*K.cos(array[:, 0]) * K.sin(array[:, 1])
-        y = (-1)*K.sin(array[:, 0])
-        z = (-1)*K.cos(array[:, 0]) * K.cos(array[:, 1])
-        
-        return (x, y, z)
-    
-    def calc_norm(vector):
-        x, y, z = vector
-        return K.sqrt(K.square(x) + K.square(y) + K.square(z))
-    
-    def calc_angle(vector1, vector2):
-        
-        x1, y1, z1 = vector1
-        x2, y2, z2 = vector2
-        norm1, norm2 = calc_norm(vector1), calc_norm(vector2)
+        x = (-1) * K.cos(array[:, 0]) * K.sin(array[:, 1])
+        y = (-1) * K.sin(array[:, 0])
+        z = (-1) * K.cos(array[:, 0]) * K.cos(array[:, 1])
 
-        return (x1*x2 + y1*y2 + z1*z2) / (norm1*norm2)
-    
-    v1, v2 = to_vector(target), to_vector(predicted)
-    angle_value = calc_angle(v1, v2)
-    
-    return K.mean(tf.acos(angle_value) * 180 / 3.1415926)
+        return tf.stack((x, y, z), axis=1)
+
+    def calc_norm(array):
+        return tf.norm(array, axis=1)
+
+    v1, v2 = to_vector(vector1), to_vector(vector2)
+    norm1, norm2 = calc_norm(vector1), calc_norm(vector2)
+
+    angle_value = tf.divide(tf.reduce_sum(tf.multiply(v1, v2), axis=1),
+                            tf.multiply(norm1, norm2))
+
+    return tf.where(tf.abs(angle_value) >= 1.0, tf.pow(angle_value, -1), angle_value)
+
+
+def angle_loss(target, predicted):
+    return K.mean(1 - calc_angle(target, predicted))
+
+
+def angle_accuracy(target, predicted):
+    return K.mean(tf.acos(calc_angle(target, predicted)) * 180 / 3.14159265)
