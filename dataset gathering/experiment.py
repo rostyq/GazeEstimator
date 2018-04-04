@@ -1,3 +1,8 @@
+from utils import * 
+import pandas as pd
+import os
+from glob import glob
+
 def run_experiment(model = 'tutorial'):
     cap = cv2.VideoCapture(0)
     root = tk.Tk()
@@ -26,9 +31,11 @@ def run_experiment(model = 'tutorial'):
         if len(rects) > 0:
             _, frame = get_face_pose(rects, gray, frame, predictor, model)
 
-        clear_output(wait=True)
         cv2.imshow('test', frame)
 
     # When everything done, release the capture    
     cap.release()
     cv2.destroyAllWindows()
+    
+if __name__ == '__main__':
+    run_experiment()
