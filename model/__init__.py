@@ -1,1 +1,0 @@
-from model.model import estimate_gaze
