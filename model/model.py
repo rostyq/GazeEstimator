@@ -1,5 +1,5 @@
 from keras.models import load_model
-from model.utils import gaze2Dto3D, gaze3Dto2D, pose3Dto2D, angle_loss, angle_accuracy
+from model.utils import gaze2Dto3D, pose3Dto2D, angle_loss, angle_accuracy
 
 scope_dict = {'angle_loss': angle_loss, 'angle_accuracy': angle_accuracy}
 

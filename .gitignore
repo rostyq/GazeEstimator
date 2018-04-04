@@ -111,3 +111,4 @@ ENV/
 /model/Log/
 
 *.h5
+*.ipynb
