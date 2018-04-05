@@ -81,16 +81,20 @@ class Calibration:
     def load_metadata(self):
         with open(self.metadata) as _file:
             metadata = load(_file)
-        self.matrix = array(metadata.get('matrix'))
-        self.distortion = array(metadata.get('distortion'))
-        self.rotation = [array(vector) for vector in metadata.get('rotation')]
-        self.translation = [array(vector) for vector in metadata.get('translation')]
+        self.matrix = array(metadata.get('camera_matrix'))
+        self.distortion = array(metadata.get('distortion_coefficient'))
+        self.rotation = [array(vector) for vector in metadata.get('rotation_vector')]
+        self.translation = [array(vector) for vector in metadata.get('translation_vector')]
 
-    def metadata_logger(self):
-        logger.info('Camera Matrix: {}'.format(self.matrix))
-        logger.info('Distortion factor: {}'.format(self.distortion))
-        logger.info('Rotation vectors: {}'.format(self.rotation))
-        logger.info('Translation vectors: {}'.format(self.translation))
+    def print_metadata(self):
+        data = (self.matrix,
+                self.distortion,
+                self.rotation,
+                self.translation)
+        print(('Camera Matrix: {}\n'
+               'Distortion factor: {}\n'
+               'Rotation vectors: {}\n'
+               'Translation vectors: {}\n').format(data))
 
     def find_corners(self):
         return findChessboardCorners(self.frame_to_grey(), (6,9))
