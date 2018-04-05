@@ -1,0 +1,69 @@
+2018-04-05 10:28:37,000 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 10:28:37,017 - calibration - WARNING - Take more images
+2018-04-05 10:50:35,573 - calibration - INFO - frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405105035.png
+2018-04-05 10:51:19,742 - calibration - INFO - frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405105119.png
+2018-04-05 10:53:02,214 - calibration - INFO - frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405105302.png
+2018-04-05 10:54:06,302 - calibration - INFO - frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405105406.png
+2018-04-05 10:54:07,511 - calibration - INFO - frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405105407.png
+2018-04-05 10:54:07,908 - calibration - INFO - frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405105407.png
+2018-04-05 10:54:12,646 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 10:55:13,548 - calibration - INFO - frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405105513.png
+2018-04-05 10:55:15,382 - calibration - INFO - frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405105515.png
+2018-04-05 10:55:16,604 - calibration - INFO - frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405105516.png
+2018-04-05 10:55:20,909 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 10:58:35,888 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 10:58:35,907 - calibration - WARNING - Take more images
+2018-04-05 11:00:03,845 - calibration - INFO - frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405110003.png
+2018-04-05 11:00:08,821 - calibration - INFO - frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405110008.png
+2018-04-05 11:00:11,998 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 11:02:39,171 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 11:02:39,186 - calibration - ERROR - Take more images
+2018-04-05 11:05:48,194 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405110548.png
+2018-04-05 11:05:50,276 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405110550.png
+2018-04-05 11:05:54,035 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405110554.png
+2018-04-05 11:05:57,658 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 11:07:18,074 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405110718.png
+2018-04-05 11:07:18,893 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405110718.png
+2018-04-05 11:07:20,222 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405110720.png
+2018-04-05 11:07:21,526 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405110721.png
+2018-04-05 11:07:24,136 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 11:21:51,014 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405112151.png
+2018-04-05 11:21:53,627 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405112153.png
+2018-04-05 11:21:54,871 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405112154.png
+2018-04-05 11:21:57,475 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 11:23:52,746 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405112352.png
+2018-04-05 11:23:57,372 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 11:24:40,609 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405112440.png
+2018-04-05 11:24:41,789 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405112441.png
+2018-04-05 11:24:52,537 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 11:26:03,185 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405112603.png
+2018-04-05 11:26:03,790 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405112603.png
+2018-04-05 11:26:07,482 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405112607.png
+2018-04-05 11:26:09,743 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 11:34:07,410 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405113407.png
+2018-04-05 11:34:09,211 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405113409.png
+2018-04-05 11:34:15,494 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 11:36:17,892 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405113617.png
+2018-04-05 11:36:18,992 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405113618.png
+2018-04-05 11:36:21,308 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 11:40:16,590 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405114016.png
+2018-04-05 11:40:17,118 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405114017.png
+2018-04-05 11:40:24,551 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 11:44:22,765 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405114422.png
+2018-04-05 11:44:23,995 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405114423.png
+2018-04-05 11:44:25,000 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 11:47:24,008 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405114724.png
+2018-04-05 11:47:24,546 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405114724.png
+2018-04-05 11:47:25,559 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405114725.png
+2018-04-05 11:47:26,757 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 12:00:35,333 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405120035.png
+2018-04-05 12:00:36,157 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405120036.png
+2018-04-05 12:00:36,954 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405120036.png
+2018-04-05 12:00:37,606 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 12:03:24,207 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405120324.png
+2018-04-05 12:03:25,959 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405120325.png
+2018-04-05 12:03:26,436 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405120326.png
+2018-04-05 12:03:28,324 - calibration - WARNING - ESC pressed, closing...
+2018-04-05 12:27:24,397 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405122724.png
+2018-04-05 12:27:25,768 - calibration - INFO - Frame was saved to /home/dznet/Desktop/GazeEstimator/calibration/dataset/20180405122725.png
+2018-04-05 12:27:26,757 - calibration - WARNING - ESC pressed, closing...
