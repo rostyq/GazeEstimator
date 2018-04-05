@@ -1,5 +1,5 @@
-from camera_calibration import Calibration
+from calibration import Calibration
 
 if __name__ == '__main__':
     camera = Calibration()
-    camera.get_param()
+    camera.calibrate()
