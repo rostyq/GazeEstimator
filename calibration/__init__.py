@@ -49,14 +49,14 @@ class Calibration:
                     self.draw_corners(corners)
                     imshow(__name__, self.frame)
         capture.release()
-        destroyAllWindows()
+        cv.destroyAllWindows()
 
     def dataset_calibration(self, dataset_path=''):
         dataset_path = self.path if not dataset_path else dataset_path
-        for filename in listdir(dataset_path):
-            frame = path.join(dataset_path, filename)
-            if path.isfile(frame):
-                self.frame = imread(frame)
+        for filename in os.listdir(dataset_path):
+            frame = os.path.join(dataset_path, filename)
+            if os.path.isfile(frame):
+                self.frame = cv.imread(frame)
                 self.retrieval, corners = self.find_corners()
                 if self.retrieval:
                     self.counter += 1
@@ -65,26 +65,26 @@ class Calibration:
 
     def calibrate_camera(self):
         self.retrieval, self.matrix, self.distortion, self.rotation, \
-        self.translation = calibrateCamera(self.object_points,
+        self.translation = cv.calibrateCamera(self.object_points,
                                            self.frame_points,
                                            self.frame_to_grey().shape[::-1],
                                            None, None)
 
     def dump_metadata(self):
-        metadata = {'camera_matrix':asarray(self.matrix).tolist(),
-                    'distortion_coefficient':asarray(self.distortion).tolist(),
-                    'rotation_vector':asarray(self.rotation).tolist(),
-                    'translation_vector':asarray(self.translation).tolist()}
+        metadata = {'camera_matrix':np.asarray(self.matrix).tolist(),
+                    'distortion_coefficient':np.asarray(self.distortion).tolist(),
+                    'rotation_vector':np.asarray(self.rotation).tolist(),
+                    'translation_vector':np.asarray(self.translation).tolist()}
         with open(self.metadata, 'w') as _file:
             dump(metadata, _file)
 
     def load_metadata(self):
         with open(self.metadata) as _file:
-            metadata = load(_file)
-        self.matrix = array(metadata.get('matrix'))
-        self.distortion = array(metadata.get('distortion'))
-        self.rotation = [array(vector) for vector in metadata.get('rotation')]
-        self.translation = [array(vector) for vector in metadata.get('translation')]
+            metadata = json.load(_file)
+        self.matrix = np.array(metadata.get('matrix'))
+        self.distortion = np.array(metadata.get('distortion'))
+        self.rotation = [np.array(vector) for vector in metadata.get('rotation')]
+        self.translation = [np.array(vector) for vector in metadata.get('translation')]
 
     def metadata_logger(self):
         logger.info('Camera Matrix: {}'.format(self.matrix))
@@ -93,29 +93,29 @@ class Calibration:
         logger.info('Translation vectors: {}'.format(self.translation))
 
     def find_corners(self):
-        return findChessboardCorners(self.frame_to_grey(), (6,9))
+        return cv.findChessboardCorners(self.frame_to_grey(), (6,9))
 
     def corners_subpixel(self, corners):
-        criteria = (TERM_CRITERIA_EPS + TERM_CRITERIA_MAX_ITER, 30, 0.001)
-        return cornerSubPix(self.frame_to_grey(), corners, (11,11), (-1,-1), criteria)
+        criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+        return cv.cornerSubPix(self.frame_to_grey(), corners, (11,11), (-1,-1), criteria)
 
     def draw_corners(self, corners):
         corners_subpixel = self.corners_subpixel(corners)
         self.frame_points.append(corners_subpixel)
-        drawChessboardCorners(self.frame, (6,9), corners_subpixel, self.retrieval)
+        cv.drawChessboardCorners(self.frame, (6,9), corners_subpixel, self.retrieval)
 
     def display_message(self, message):
-        putText(self.frame, message, (20, 40), 0, 0.6, (0, 0, 0), 2)
+        cv.putText(self.frame, message, (20, 40), 0, 0.6, (0, 0, 0), 2)
 
     def zero_points(self):
-        points = zeros((6*9,3), float32)
-        points[:,:2] = mgrid[0:6,0:9].T.reshape(-1,2)
+        points = np.zeros((6*9,3), np.float32)
+        points[:,:2] = np.mgrid[0:6,0:9].T.reshape(-1,2)
         return points
 
     def frame_path(self):
-        return path.join(self.path, strftime('%Y%m%d%H%M%S.png'))
+        return os.path.join(self.path, time.strftime('%Y%m%d%H%M%S.png'))
 
     def frame_to_grey(self):
-        return cvtColor(self.frame, COLOR_BGR2GRAY)
+        return cv.cvtColor(self.frame, cv.COLOR_BGR2GRAY)
 
 ################################################################################
