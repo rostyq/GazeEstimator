@@ -114,4 +114,4 @@ ENV/
 /dataset gathering/Data/
 
 # model files
-.h5
+*.h5

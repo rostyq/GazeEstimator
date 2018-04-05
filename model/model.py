@@ -1,9 +1,36 @@
 from keras.models import load_model
-from model.utils import gaze2Dto3D, gaze3Dto2D, pose3Dto2D, angle_loss, angle_accuracy
+from utils import gaze2Dto3D, pose3Dto2D
+import tensorflow as tf
+def calc_angle(vector1, vector2):
 
-scope_dict = {'angle_loss': angle_loss, 'angle_accuracy': angle_accuracy}
+    def to_vector(array):
+        x = (-1) * tf.cos(array[:, 0]) * tf.sin(array[:, 1])
+        y = (-1) * tf.sin(array[:, 0])
+        z = (-1) * tf.cos(array[:, 0]) * tf.cos(array[:, 1])
 
-model = load_model('./model_epoch1.h5', custom_objects=scope_dict, compile=True)
+        return tf.stack((x, y, z), axis=1)
+
+    def unit_vector(array):
+        return tf.divide(array, tf.norm(array, axis=1, keep_dims=True))
+
+    unit_v1, unit_v2 = unit_vector(to_vector(vector1)), unit_vector(to_vector(vector2))
+    angle_value = tf.matmul(unit_v1, unit_v2, transpose_b=True)[:, 0]
+    # return angle_value
+    return tf.clip_by_value(angle_value, -1.0, 1.0)
+
+
+def angle_loss(target, predicted):
+    return tf.reduce_mean(1.0 - calc_angle(target, predicted))
+
+def loss(target, predicted):
+    return tf.reduce_mean(tf.reduce_sum(tf.square(target - predicted), axis=1))
+
+def angle_accuracy(target, predicted):
+    return tf.reduce_mean(tf.acos(calc_angle(target, predicted)) * 180 / 3.14159265)
+
+scope_dict = {'angle_accuracy': angle_accuracy}
+
+model = load_model('../model_last.h5', custom_objects=scope_dict, compile=True)
 
 
 def estimate_gaze(eye_image, head_pose):

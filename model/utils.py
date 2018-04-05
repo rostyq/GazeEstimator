@@ -2,77 +2,75 @@ import numpy as np
 from scipy.io import loadmat
 import glob
 from cv2 import Rodrigues
-from keras import backend as K
-import tensorflow as tf
-try:
-    from tqdm import tqdm
-except ModuleNotFoundError:
-    pass
 
 
-def print_shapes(titles, items):
-    for title, item in zip(titles, items):
-        print((title + ':').ljust(15) + str(item.shape))
+def dataset_indices(matfiles):
+    
+    indices = list()
+    for file in matfiles:
+        p, d = int(file.split('/')[-2][-2:]), int(file.split('/')[-1].split('.')[0][-2:])
+        indices.extend([(p, d, i) for i in range(1, len(loadmat(file)['filenames']) + 1)])
+    
+    return pd.DataFrame(indices, columns=['p', 'd', 'sample'])
 
 
-def gather_eye_data(path, eye='right'):
+def gather_batches(indices, path='./MPIIGaze', batch_size=1000, test_ratio=0.2, random_state=None):
     
-    mat_files = glob.glob(f'{path}/**/*.mat', recursive=True)
-    mat_files.sort()
-    
-    indices = []
-    images = []
-    poses = []
-    gazes = []
-    try:
-        mat_files = tqdm(mat_files)
-    except NameError:
-        pass
-    for file in mat_files:
-        matfile = loadmat(file)
-        
-        file_idx = file.split('/')[-2], file.split('/')[-1].split('.')[0]
-        
-        indices.extend([[*file_idx, jpg[0][0], eye] for jpg in matfile['filenames']])
-        images.extend(matfile['data'][eye][0, 0]['image'][0, 0])
-        poses.extend(matfile['data'][eye][0, 0]['pose'][0, 0])
-        gazes.extend(matfile['data'][eye][0, 0]['gaze'][0, 0])
-    
-    indices = np.array(indices)
-    images = np.array(images).reshape((-1, 36, 60, 1)).astype(np.float32) / 255
-    poses = np.array(poses).astype(np.float32)
-    gazes = np.array(gazes).astype(np.float32)
-    
-    return indices, images, poses, gazes
+    train_images = list()
+    train_poses = list()
+    train_gazes = list()
 
+    test_images = list()
+    test_poses = list()
+    test_gazes = list()
 
-def gather_all_data(path):
+    for p_num, p_df in indices.groupby('p'):
+        for day_num, day_df in p_df.sample(batch_size, random_state=random_state).sort_values('sample').groupby('d'):
+
+            # get day file
+            p = str(p_num).rjust(2, '0')
+            day = str(day_num).rjust(2, '0')
+            mat = loadmat(f'{path}/Data/Normalized/p{p}/day{day}.mat')
+
+            # get samples id-s
+            samples = day_df['sample'].values - 1
+            
+            # get data for left eye
+            left_images = mat['data']['left'][0, 0]['image'][0, 0][samples].reshape((-1, 36, 60, 1))
+            left_poses = mat['data']['left'][0, 0]['pose'][0, 0][samples]
+            left_gazes = mat['data']['left'][0, 0]['gaze'][0, 0][samples]
+
+            # get data for right eye and mirror it
+            right_images = np.flip(mat['data']['right'][0, 0]['image'][0, 0][samples], axis=2).reshape((-1, 36, 60, 1))
+            right_poses = mat['data']['right'][0, 0]['pose'][0, 0][samples] @ np.diag([-1, 1, 1])
+            right_gazes = mat['data']['right'][0, 0]['gaze'][0, 0][samples] @ np.diag([-1, 1, 1])
+            
+            # split train test
+            train_size = int(len(samples)*(1 - test_ratio))
+            
+            train_images.extend(left_images[:train_size])
+            train_images.extend(right_images[:train_size])
+            train_poses.extend(left_poses[:train_size])
+            train_poses.extend(right_poses[:train_size])
+            train_gazes.extend(left_gazes[:train_size])
+            train_gazes.extend(right_gazes[:train_size])
+            
+            test_images.extend(left_images[train_size:])
+            test_images.extend(right_images[train_size:])
+            test_poses.extend(left_poses[train_size:])
+            test_poses.extend(right_poses[train_size:])
+            test_gazes.extend(left_gazes[train_size:])
+            test_gazes.extend(right_gazes[train_size:])
+            
+    train_images = np.array(train_images, subok=True) / 255
+    train_poses = np.array(train_poses, subok=True)
+    train_gazes = np.array(train_gazes, subok=True)
     
-    mat_files = glob.glob(f'{path}/**/*.mat', recursive=True)
-    mat_files.sort()
+    test_images = np.array(test_images, subok=True) / 255
+    test_poses = np.array(test_poses, subok=True)
+    test_gazes = np.array(test_gazes, subok=True)
     
-    index = dict(left=list(), right=list())
-    image = dict(left=list(), right=list())
-    pose = dict(left=list(), right=list())
-    gaze = dict(left=list(), right=list())
-    
-    for file in tqdm(mat_files):
-        # read file
-        matfile = loadmat(file)
-        
-        # file name
-        file_idx = file.split('/')[-2], file.split('/')[-1].split('.')[0]
-        for eye in ['left', 'right']:
-            index[eye].extend([[*file_idx, jpg[0][0], eye] for jpg in matfile['filenames']])
-            image[eye].extend(matfile['data'][eye][0, 0]['image'][0, 0])
-            pose[eye].extend(matfile['data'][eye][0, 0]['pose'][0, 0])
-            gaze[eye].extend(matfile['data'][eye][0, 0]['gaze'][0, 0])
-    
-    index = np.stack(tuple(index.values())).reshape((-1, 4))
-    image = np.stack(tuple(image.values())).reshape((-1, 36, 60, 1))
-    pose = np.stack(tuple(pose.values())).reshape((-1, 3))
-    gaze = np.stack(tuple(gaze.values())).reshape((-1, 3))
-    return index, image, pose, gaze
+    return train_images, train_poses, train_gazes, test_images, test_poses, test_gazes
 
         
 def gaze3Dto2D(array, stack=True):
@@ -82,7 +80,7 @@ def gaze3Dto2D(array, stack=True):
     """
     if array.ndim == 2:
         assert array.shape[1] == 3
-        x, y, z = (array[:, i]for i in range(3))
+        x, y, z = (array[:, i] for i in range(3))
     elif array.ndim == 1:
         assert array.shape[0] == 3
         x, y, z = (array[i] for i in range(3))
@@ -131,34 +129,10 @@ def pose3Dto2D(array):
         return np.array([phi, theta])
     
     return np.apply_along_axis(convert_pose, 1, array)
+    
+    
+    
 
 
-# functions for keras model
-# work only with tensors
-
-def calc_angle(vector1, vector2):
-    def to_vector(array):
-        x = (-1) * K.cos(array[:, 0]) * K.sin(array[:, 1])
-        y = (-1) * K.sin(array[:, 0])
-        z = (-1) * K.cos(array[:, 0]) * K.cos(array[:, 1])
-
-        return tf.stack((x, y, z), axis=1)
-
-    def calc_norm(array):
-        return tf.norm(array, axis=1)
-
-    v1, v2 = to_vector(vector1), to_vector(vector2)
-    norm1, norm2 = calc_norm(vector1), calc_norm(vector2)
-
-    angle_value = tf.divide(tf.reduce_sum(tf.multiply(v1, v2), axis=1),
-                            tf.multiply(norm1, norm2))
-
-    return tf.where(tf.abs(angle_value) >= 1.0, tf.pow(angle_value, -1), angle_value)
 
 
-def angle_loss(target, predicted):
-    return K.mean(1 - calc_angle(target, predicted))
-
-
-def angle_accuracy(target, predicted):
-    return K.mean(tf.acos(calc_angle(target, predicted)) * 180 / 3.14159265)
