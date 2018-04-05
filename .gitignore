@@ -1,5 +1,5 @@
 # Byte-compiled / optimized / DLL files
-__pycache__/
+*__pycache__*
 *.py[cod]
 *$py.class
 
@@ -8,7 +8,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-env/
+.env/
 build/
 develop-eggs/
 dist/
@@ -108,10 +108,10 @@ ENV/
 /model/MPIIGaze/
 
 # tensor board log
-/model/Log/
+/model/log/
 
 #dataset
-/dataset gathering/Data/
+/dataset_gathering/Data/
 
 # model files
 .h5
