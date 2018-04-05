@@ -7,6 +7,12 @@ import os
 from imutils import face_utils
 from scipy.io import loadmat, savemat
 
+import sys
+sys.path.append('../')
+
+from .model.model import estimate_gaze
+
+
 def get_eye_landmarks(rects, gray, frame, predictor, draw = False):
     landmarks = []
     for (k, rect) in enumerate(rects):
@@ -122,8 +128,8 @@ def get_face_pose(rects, gray, frame, predictor, model):
                                                                       camera_matrix, 
                                                                       dist_coeffs, 
                                                                       flags=cv2.SOLVEPNP_ITERATIVE)
-        cv2.putText(frame, f'Translation vector=[{translation_vector[0][0]:.2f},{translation_vector[1][0]:.2f}, {(translation_vector[2][0]):.2f}]', 
-                   (0,50), font, 0.7, (255,255,255), 2, cv2.LINE_AA)
+#         cv2.putText(frame, f'Translation vector=[{translation_vector[0][0]:.2f},{translation_vector[1][0]:.2f}, {(translation_vector[2][0]):.2f}]', 
+#                    (0,50), font, 0.7, (255,255,255), 2, cv2.LINE_AA)
         
         #extacting normalized eye images
         l_eye, r_eye = model_points[2], model_points[3] 
@@ -157,14 +163,18 @@ def get_face_pose(rects, gray, frame, predictor, model):
     translation_to_eyes = - np.array([l_eye[0], l_eye[1] - eye_height])
     left_eye_frame, right_eye_frame = normalized_eye_frames(frame, rotation_vector, translation_vector, camera_matrix, 
                                   dist_coeffs, four_points_plane, center, translation_to_eyes)
-    #left_eye_frame, right_eye_frame = cv2.resize(left_eye_frame, (60, 36)), cv2.resize(right_eye_frame, (60, 36))     
+    left_eye_frame, right_eye_frame = cv2.resize(left_eye_frame, (60, 36)), cv2.resize(right_eye_frame, (60, 36))     
     left_eye_frame, right_eye_frame = cv2.cvtColor(left_eye_frame, cv2.COLOR_BGR2GRAY), cv2.cvtColor(right_eye_frame, cv2.COLOR_BGR2GRAY)
     left_eye_frame, right_eye_frame = cv2.equalizeHist(left_eye_frame), cv2.equalizeHist(right_eye_frame)
 
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     frame[:right_eye_frame.shape[0],-right_eye_frame.shape[1]:] = right_eye_frame
     frame[:left_eye_frame.shape[0],-right_eye_frame.shape[1]-left_eye_frame.shape[1]:-right_eye_frame.shape[1]] = left_eye_frame
-    return rotation_vector, frame
+    
+    gaze = estimate_gaze(np.array([left/255]), np.array([rvec]))
+    cv2.putText(frame, str(gaze), (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+    
+    return rotation_vector, frame, right_eye_frame, left_eye_frame
 
 def draw_random_point(coord, screen):
     white = np.zeros(screen, dtype=np.uint8) 
