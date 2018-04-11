@@ -3,7 +3,7 @@ from os import path, getcwd, listdir
 from yaml import dump, load
 from logging import basicConfig, getLogger, DEBUG
 from numpy import zeros, mgrid, float32, array, asarray
-from cv2 import *
+import cv2 as cv
 
 basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             filename='log/{}.log'.format(__name__),
@@ -31,15 +31,16 @@ class Calibration:
             logger.error('Take more images')
 
     def capture_calibration(self):
-        capture = VideoCapture(CAP_ANY)
+        capture = cv.VideoCapture(cv.CAP_ANY)
+        print(capture.isOpened())
         while capture.isOpened():
             self.retrieval, self.frame = capture.read()
             self.display_message('Saved frames: {}'.format(self.counter))
-            imshow(__name__, self.frame)
-            if waitKey(33) % 256 == 27:
+            cv.imshow(__name__, self.frame)
+            if cv.waitKey(33) % 256 == 27:
                 logger.warning('ESC pressed, closing...')
                 break
-            if waitKey(33) % 256 == 32:
+            if cv.waitKey(33) % 256 == 32:
                 self.retrieval, corners = self.find_corners()
                 if self.retrieval:
                     self.counter += 1
