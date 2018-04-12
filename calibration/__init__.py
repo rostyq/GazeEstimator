@@ -15,7 +15,7 @@ logger = getLogger(__name__)
 class Calibration:
 
     def __init__(self, board_shape, path_to_dataset = None):
-        self.path = path_to_dataset if path is not None else path.join(getcwd(), 'calibration/dataset')
+        self.path = path_to_dataset if path_to_dataset is not None else path.join(os.path., 'calibration/dataset')
         self.metadata = path.join(self.path, '{}.yaml'.format(__name__))
         self.object_points = list()
         self.frame_points = list()
@@ -84,11 +84,11 @@ class Calibration:
 
     def load_metadata(self):
         with open(self.metadata) as _file:
-            metadata = json.load(_file)
-        self.matrix = np.array(metadata.get('matrix'))
-        self.distortion = np.array(metadata.get('distortion'))
-        self.rotation = [np.array(vector) for vector in metadata.get('rotation')]
-        self.translation = [np.array(vector) for vector in metadata.get('translation')]
+            metadata = load(_file)
+        self.matrix = np.array(metadata.get('camera_matrix'))
+        self.distortion = np.array(metadata.get('distortion_coefficient'))
+        self.rotation = [np.array(vector) for vector in metadata.get('rotation_vector')]
+        self.translation = [np.array(vector) for vector in metadata.get('translation_vector')]
 
     def metadata_logger(self):
         logger.info('Camera Matrix: {}'.format(self.matrix))
