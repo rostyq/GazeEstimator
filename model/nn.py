@@ -1,81 +1,97 @@
-from keras.layers import Input, Conv2D, MaxPool2D, Dense, Concatenate, Flatten, Dropout, Lambda
+from keras.layers import Input, Dense, Concatenate, Flatten, Dropout, Lambda
+from keras.layers.convolutional import Conv2D
+from keras.layers.pooling import MaxPool2D
 from keras.initializers import RandomNormal, glorot_normal, glorot_uniform
+from keras.regularizers import l2
+from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, LearningRateScheduler, ReduceLROnPlateau, TerminateOnNaN
+from keras.optimizers import SGD, Adam
 from keras.models import Model
-from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, TerminateOnNaN
-from keras.optimizers import SGD
-from keras.models import Model
+from numpy import pi
 import tensorflow as tf
+from keras import backend as K
+from tensorflow.python import debug as tf_debug
 
-def create_model():
+debug = False
+if debug:
+    sess = K.get_session()
+    sess = tf_debug.LocalCLIDebugWrapperSession(sess)
+    K.set_session(sess)
+else:
+    pass
 
-    # functions
-    def calc_angle(vector1, vector2):
+# tensorflow functions
+def calc_angle(angles1, angles2):
 
-        def to_vector(array):
-            x = (-1) * tf.cos(array[:, 0]) * tf.sin(array[:, 1])
-            y = (-1) * tf.sin(array[:, 0])
-            z = (-1) * tf.cos(array[:, 0]) * tf.cos(array[:, 1])
+    def to_vector(angle):
+        x = (-1) * tf.cos(angle[:, 1]) * tf.sin(angle[:, 0])
+        y = (-1) * tf.sin(angle[:, 1])
+        z = (-1) * tf.cos(angle[:, 1]) * tf.cos(angle[:, 0])
+        return tf.stack((x, y, z), axis=1)
 
-            return tf.stack((x, y, z), axis=1)
+    def unit_vector(array):
+        return tf.divide(array, tf.norm(array, axis=1, keep_dims=True))
 
-        def unit_vector(array):
-            return tf.divide(array, tf.norm(array, axis=1, keep_dims=True))
+    unit_v1, unit_v2 = unit_vector(to_vector(angles1)), unit_vector(to_vector(angles2))
 
-        unit_v1, unit_v2 = unit_vector(to_vector(vector1)), unit_vector(to_vector(vector2))
-        angle_value = tf.matmul(unit_v1, unit_v2, transpose_b=True)[:, 0]
-        # return angle_value
-        return tf.clip_by_value(angle_value, -1.0, 1.0)
+    return tf.acos(tf.reduce_sum(unit_v1 * unit_v2, axis=1), name='acos') * 180 / pi
+
+def angle_accuracy(target, predicted):
+    return tf.reduce_mean(calc_angle(predicted, target), name='mean_angle')
 
 
-    def angle_loss(target, predicted):
-        return tf.reduce_mean(1.0 - calc_angle(target, predicted))
-    
-    def loss(target, predicted):
-        return tf.reduce_mean(tf.reduce_sum(tf.square(target - predicted), axis=1))
-
-    def angle_accuracy(target, predicted):
-        return tf.reduce_mean(tf.acos(calc_angle(target, predicted)) * 180 / 3.14159265)
-
+def create_model(learning_rate=1e-2, seed=None):
 
     # input
-    input_img = Input(shape=(36, 60, 1), name='InputNormalizedImage')
-    input_pose = Input(shape=(2,), name='InputHeadPose')
+    input_img = Input(shape=(36, 60, 1), name='InputImage')
+    input_pose = Input(shape=(2,), name='InputPose')
+
+    regularizer = l2(0.0)
 
     # convolutional
-    conv1 = Conv2D(filters=20, activation='relu',
-                   kernel_size=(5, 5),
-                   strides=(1, 1),
-                   kernel_initializer=RandomNormal(mean=0.0, stddev=0.01, seed=42),
-                   bias_initializer='zeros',
-                   name='conv1'
-                   )(input_img)
-    pool1 = MaxPool2D(pool_size=(2, 2),
-                      strides=(2, 2),
-                      padding='valid',
-                      name='maxpool1'
-                      )(conv1)
-    conv2 = Conv2D(filters=50, activation='relu',
-                   kernel_size=(5, 5),
-                   strides=(1, 1),
-                   kernel_initializer=RandomNormal(mean=0.0, stddev=0.001, seed=42),
-                   bias_initializer='zeros',
-                   name='conv2'
-                   )(pool1)
-    pool2 = MaxPool2D(pool_size=(2, 2),
-                      strides=(2, 2),
-                      padding='valid',
-                      name='maxpool2'
-                      )(conv2)
+    conv1 = Conv2D(
+        filters=20,
+        activation='relu',
+        kernel_size=(5, 5),
+        strides=(1, 1),
+        kernel_initializer=RandomNormal(mean=0.0, stddev=0.1, seed=seed),
+        bias_initializer='zeros',
+        # kernel_regularizer=regularizer,
+        name='conv1'
+        )(input_img)
+    pool1 = MaxPool2D(
+        pool_size=(2, 2),
+        strides=(2, 2),
+        padding='valid',
+        name='maxpool1'
+        )(conv1)
+    conv2 = Conv2D(
+        filters=50,
+        activation='relu',
+        kernel_size=(5, 5),
+        strides=(1, 1),
+        kernel_initializer=RandomNormal(mean=0.0, stddev=0.01, seed=seed),
+        bias_initializer='zeros',
+        # kernel_regularizer=regularizer,
+        name='conv2'
+        )(pool1)
+    pool2 = MaxPool2D(
+        pool_size=(2, 2),
+        strides=(2, 2),
+        padding='valid',
+        name='maxpool2'
+        )(conv2)
 
     flatt = Flatten(name='flatt')(pool2)
 
     # inner product 1
-    dense1 = Dense(units=500,
-                   activation='relu',
-                   kernel_initializer=glorot_uniform(seed=42),
-                   bias_initializer='zeros',
-                   name='ip1'
-                   )(flatt)
+    dense1 = Dense(
+        units=500,
+        activation='relu',
+        kernel_initializer=glorot_uniform(seed=seed),
+        bias_initializer='zeros',
+        kernel_regularizer=regularizer,
+        name='fc1'
+        )(flatt)
 
     # concatanate with head pose
     cat = Concatenate(axis=-1, name='concat')([dense1, input_pose])
@@ -83,25 +99,54 @@ def create_model():
     #dropout = Dropout(rate=0.1)(cat)
 
     # inner product 2
-    dense2 = Dense(units=2,
-                   kernel_initializer=glorot_uniform(seed=42),
-                   bias_initializer='zeros',
-                   name='ip2'
-                   )(cat)
+    dense2 = Dense(
+        units=2,
+        kernel_initializer=glorot_uniform(seed=seed),
+        bias_initializer='zeros',
+        name='fc2'
+        )(cat)
 
     ### OPTIMIZER ###
-    optimizer = SGD(lr=1e-1)
+    optimizer = SGD(
+        lr=learning_rate,
+        decay=0.1,
+        nesterov=True,
+        momentum=0.9
+        )
 
     ### COMPILE MODEL ###
     model = Model([input_img, input_pose], dense2)
-    model.compile(optimizer=optimizer, loss=loss, metrics=[angle_accuracy])
+    model.compile(optimizer=optimizer, loss="mean_squared_error", metrics=[angle_accuracy])
     return model
 
 def create_callbacks():
+
     ### CALLBACKS ###
-    tbCallBack = TensorBoard(log_dir='./log', histogram_freq=0, write_graph=True)
-    checkpoint = ModelCheckpoint('./checkpoints/', monitor='val_loss', period=10)
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, epsilon=1e-4, patience=5, verbose=1)
-    earlystop = EarlyStopping(monitor='val_loss', min_delta=1e-6, patience=10, verbose=1)
+    tbCallBack = TensorBoard(
+        log_dir='./tblog',
+        histogram_freq=0,
+        write_graph=False,
+        write_images=False,
+        write_grads=False
+        )
+    checkpoint = ModelCheckpoint(
+        './checkpoints/model_{epoch}_{val_loss:.4f}.h5',
+        monitor='val_loss',
+        period=10
+        )
+    reduce_lr = ReduceLROnPlateau(
+        monitor='val_loss',
+        factor=0.1,
+        epsilon=1e-4,
+        patience=4,
+        verbose=1
+        )
+    earlystop = EarlyStopping(
+        monitor='val_loss',
+        min_delta=1e-6,
+        patience=20,
+        verbose=1)
     terminate = TerminateOnNaN()
-    return [tbCallBack, checkpoint, reduce_lr, earlystop, terminate]
+    lr_scheduler = LearningRateScheduler(lambda epoch, lr: lr * (0.1 * (epoch+1)))
+
+    return [tbCallBack, checkpoint, earlystop, terminate, lr_scheduler]
