@@ -5,6 +5,7 @@ from logging import basicConfig, getLogger, DEBUG
 import numpy as np
 import cv2
 import json
+from PIL import Image
 
 basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             filename='log/{}.log'.format(__name__),
@@ -13,11 +14,12 @@ logger = getLogger(__name__)
 
 class Calibration:
 
-    def __init__(self, path_to_dataset):
+    def __init__(self, board_shape, path_to_dataset = None):
         self.path = path_to_dataset if path is not None else path.join(getcwd(), 'calibration/dataset')
         self.metadata = path.join(self.path, '{}.yaml'.format(__name__))
         self.object_points = list()
         self.frame_points = list()
+        self.board_shape = board_shape
         self.counter = 0
 
     def calibrate(self, method='capture'):
@@ -48,6 +50,7 @@ class Calibration:
                     logger.info('Frame was saved to {}'.format(self.frame_path()))
                     self.object_points.append(self.zero_points())
                     self.draw_corners(corners)
+                    print(1)
                     cv2.imshow(__name__, self.frame)
         capture.release()
         cv2.destroyAllWindows()
@@ -56,7 +59,7 @@ class Calibration:
         dataset_path = self.path if not dataset_path else dataset_path
         for filename in listdir(dataset_path):
             frame = path.join(dataset_path, filename)
-            if path.isfile(frame):
+            if path.isfile(frame) and (frame.endswith('.png') or frame.endswith('.jpg')):
                 self.frame = cv2.imread(frame)
                 self.retrieval, corners = self.find_corners()
                 if self.retrieval:
@@ -94,23 +97,24 @@ class Calibration:
         logger.info('Translation vectors: {}'.format(self.translation))
 
     def find_corners(self):
-        return cv2.findChessboardCorners(self.frame, (4,6))
+        return cv2.findChessboardCorners(self.frame, self.board_shape)
 
     def corners_subpixel(self, corners):
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-        return cv2.cornerSubPix(self.frame_to_grey(), corners, (11,11), (-1,-1), criteria)
+        return cv2.cornerSubPix(self.frame_to_grey(), corners, (11, 11), (-1, -1), criteria)
 
     def draw_corners(self, corners):
         corners_subpixel = self.corners_subpixel(corners)
         self.frame_points.append(corners_subpixel)
-        cv2.drawChessboardCorners(self.frame, (5,7), corners_subpixel, self.retrieval)
+        cv2.drawChessboardCorners(self.frame, self.board_shape, corners_subpixel, self.retrieval)
+        Image.fromarray(self.frame).show()
 
     def display_message(self, message):
         cv2.putText(self.frame, message, (20, 40), 0, 0.6, (0, 0, 0), 2)
 
     def zero_points(self):
-        points = np.zeros((4*6,3), np.float32)
-        points[:,:2] = np.mgrid[0:4,0:6].T.reshape(-1,2)
+        points = np.zeros((self.board_shape[0]*self.board_shape[1], 3), np.float32)
+        points[:,:2] = np.mgrid[0:self.board_shape[0], 0:self.board_shape[1]].T.reshape(-1, 2)
         return points
 
     def frame_path(self):

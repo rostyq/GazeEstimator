@@ -1,7 +1,6 @@
-from utils import * 
-import pandas as pd
-import os
-from glob import glob
+from model import FacesRecognition
+import cv2
+import tkinter as tk
 
 def run_experiment(model = 'tutorial'):
     cap = cv2.VideoCapture(0)
@@ -12,9 +11,8 @@ def run_experiment(model = 'tutorial'):
     cv2.namedWindow("test", cv2.WND_PROP_FULLSCREEN)          
     cv2.setWindowProperty("test", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
-    #init face detector and landmark predictor
-    detector = dlib.get_frontal_face_detector()
-    predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
+    fr = FacesRecognition(screen)
+
 
     i = 0
     while(True):
@@ -23,15 +21,17 @@ def run_experiment(model = 'tutorial'):
 
         if key == 27:
             break
-            
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        #faces detection
-        rects = detector(gray, 1)
-        if len(rects) > 0:
-            _, frame = get_face_pose(rects, gray, frame, predictor, model)
+        fr.set_image(frame)
+        fr.decect_faces()
+        if len(fr.rects) > 0:
+            fr.detect_landmarks()
+            fr.detect_faces_poses()
+            #fr.detect_gazes()
 
-        cv2.imshow('test', frame)
+
+
+        cv2.imshow('test', fr.frame)
 
     # When everything done, release the capture    
     cap.release()

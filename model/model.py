@@ -1,5 +1,5 @@
 from keras.models import load_model
-from utils import gaze2Dto3D, pose3Dto2D
+from model.utils import gaze2Dto3D, pose3Dto2D
 import tensorflow as tf
 def calc_angle(vector1, vector2):
 
@@ -30,7 +30,7 @@ def angle_accuracy(target, predicted):
 
 scope_dict = {'angle_accuracy': angle_accuracy}
 
-model = load_model('../model_last.h5', custom_objects=scope_dict, compile=True)
+#model = load_model('../model_last.h5', custom_objects=scope_dict, compile=True)
 
 
 def estimate_gaze(eye_image, head_pose):
