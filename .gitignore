@@ -108,7 +108,10 @@ ENV/
 /model/MPIIGaze/
 
 # tensor board log
-/model/Log/
+/model/tblog/
 
-*.h5
+# checkpoints
+checkpoints/
+
+# jupyter notebook
 *.ipynb
