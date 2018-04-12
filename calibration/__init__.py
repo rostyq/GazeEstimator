@@ -84,11 +84,11 @@ class Calibration:
 
     def load_metadata(self):
         with open(self.metadata) as _file:
-            metadata = json.load(_file)
-        self.matrix = np.array(metadata.get('matrix'))
-        self.distortion = np.array(metadata.get('distortion'))
-        self.rotation = [np.array(vector) for vector in metadata.get('rotation')]
-        self.translation = [np.array(vector) for vector in metadata.get('translation')]
+            metadata = load(_file)
+        self.matrix = np.array(metadata.get('camera_matrix'))
+        self.distortion = np.array(metadata.get('distortion_coefficient'))
+        self.rotation = [np.array(vector) for vector in metadata.get('rotation_vector')]
+        self.translation = [np.array(vector) for vector in metadata.get('translation_vector')]
 
     def metadata_logger(self):
         logger.info('Camera Matrix: {}'.format(self.matrix))
