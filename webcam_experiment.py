@@ -1,4 +1,4 @@
-from model import FacesRecognition
+from normalisation import FacesRecognition
 import cv2
 import tkinter as tk
 
@@ -27,7 +27,11 @@ def run_experiment(model = 'tutorial'):
         if len(fr.rects) > 0:
             fr.detect_landmarks()
             fr.detect_faces_poses()
-            #fr.detect_gazes()
+            fr.detect_gazes()
+
+            fr.draw_eye_borders()
+            fr.draw_eye_centeres()
+            fr.draw_faces_rectangles()
 
 
 

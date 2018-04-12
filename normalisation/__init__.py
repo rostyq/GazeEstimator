@@ -3,7 +3,7 @@ import numpy as np
 from imutils import face_utils
 from scipy.io import loadmat
 from os import getcwd, path
-#from model.model import estimate_gaze
+from estimator import estimate_gaze
 import dlib
 
 
@@ -11,7 +11,7 @@ class FacesRecognition:
     def __init__(self, size, camera_matrix=None, dist_coeffs=None, model='tutorial'):
         # init generic face model
         self.model = model
-        path_to_models = path.join(getcwd(), 'model')
+        path_to_models = path.join(getcwd(), 'normalisation')
         matfile = loadmat(path.join(path_to_models, f'6_points_face_model_{self.model}.mat'))
         if model == 'dataset':
             self.model_points = matfile['model'].T
@@ -195,20 +195,22 @@ class FacesRecognition:
             left_eye_frame, right_eye_frame = self.norm_eye_frames[i]
 
             # gaze estimation
-            gaze = estimate_gaze(np.array([left_eye_frame / 255, np.flip(right_eye_frame / 255, axis=1)]),
+            gaze = estimate_gaze(np.array([left_eye_frame, np.flip(right_eye_frame, axis=1)]),
                                  np.array([face_pose[0], face_pose[0] * np.array([[-1], [1], [1]])]))
 
-            cv2.putText(self.frame,str(gaze), (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            cv2.putText(self.frame, str(gaze), (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
+            # drawing left eye vector
             left_eye_center = np.array([150.0, -170.0, -135.0])
-            left_eye_gaze = left_eye_center + 1000 * gaze[0]
+            left_eye_gaze = left_eye_center + 750 * gaze[0]
             end_points, _ = cv2.projectPoints(np.array([left_eye_center, left_eye_gaze]), face_pose[0],
                                               face_pose[1], self.camera_matrix, self.dist_coeffs)
             cv2.line(self.frame, (int(end_points[0][0][0]), int(end_points[0][0][1])),
                      (int(end_points[1][0][0]), int(end_points[1][0][1])), (255, 0, 0), 2)
 
+            # drawing right eye vector
             right_eye_center = np.array([-150.0, -170.0, -135.0])
-            right_eye_gaze = right_eye_center + 1000 * gaze[1]
+            right_eye_gaze = right_eye_center + 750 * gaze[1]
             end_points, _ = cv2.projectPoints(np.array([right_eye_center, right_eye_gaze* np.array([-1, 1, 1])]), face_pose[0],
                                               face_pose[1], self.camera_matrix, self.dist_coeffs)
             cv2.line(self.frame, (int(end_points[0][0][0]), int(end_points[0][0][1])),
