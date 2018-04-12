@@ -1,4 +1,3 @@
-*.ipynb
 # Byte-compiled / optimized / DLL files
 *__pycache__*
 *.py[cod]
@@ -104,29 +103,16 @@ ENV/
 # idea
 .idea/
 
-# dataset
-/model/dataset/
-/model/MPIIGaze/
-
-# tensor board log
-<<<<<<< HEAD
-/model/log/
-
-#dataset
+# datasets
+/estimator/dataset/
+/estimator/MPIIGaze/
 /dataset_gathering/Data/
 
-# model files
-<<<<<<< HEAD
-*.h5
-=======
-.h5
->>>>>>> origin/camera_calibration
-=======
-/model/tblog/
+# tensor board log
+/estimator/tblog/
 
 # checkpoints
 checkpoints/
 
 # jupyter notebook
 *.ipynb
->>>>>>> keras_model
