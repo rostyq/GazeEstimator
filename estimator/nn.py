@@ -3,7 +3,7 @@ from keras.layers.convolutional import Conv2D
 from keras.layers.pooling import MaxPool2D
 from keras.initializers import RandomNormal, glorot_normal, glorot_uniform
 from keras.regularizers import l2
-from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, LearningRateScheduler, ReduceLROnPlateau, TerminateOnNaN
+from keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, TerminateOnNaN
 from keras.optimizers import SGD, Adam
 from keras.models import Model
 from numpy import pi
@@ -109,7 +109,7 @@ def create_model(learning_rate=1e-2, seed=None):
     ### OPTIMIZER ###
     optimizer = SGD(
         lr=learning_rate,
-        decay=0.1,
+        # decay=0.01,
         nesterov=True,
         momentum=0.9
         )
@@ -125,9 +125,9 @@ def create_callbacks():
     tbCallBack = TensorBoard(
         log_dir='./tblog',
         histogram_freq=0,
-        write_graph=False,
-        write_images=False,
-        write_grads=False
+        write_graph=True,
+        write_images=True,
+        write_grads=True
         )
     checkpoint = ModelCheckpoint(
         './checkpoints/model_{epoch}_{val_loss:.4f}.h5',
@@ -143,10 +143,9 @@ def create_callbacks():
         )
     earlystop = EarlyStopping(
         monitor='val_loss',
-        min_delta=1e-6,
+        min_delta=1e-5,
         patience=20,
         verbose=1)
     terminate = TerminateOnNaN()
-    lr_scheduler = LearningRateScheduler(lambda epoch, lr: lr * (0.1 * (epoch+1)))
 
-    return [tbCallBack, checkpoint, earlystop, terminate, lr_scheduler]
+    return [tbCallBack, checkpoint, terminate]

@@ -70,12 +70,12 @@ def gather_data(indices=None, path='./MPIIGaze', batch_size=1000, test_ratio=0.2
             test_gazes.extend(left_gazes[train_size:])
             test_gazes.extend(right_gazes[train_size:])
 
-    train_images = np.array(train_images, subok=True).astype(np.float64) / 255
-    train_poses = np.array(train_poses, subok=True).astype(np.float64)
-    train_gazes = np.array(train_gazes, subok=True).astype(np.float64)
+    train_images = np.array(train_images, subok=True).astype(np.float32) / 255
+    train_poses = np.array(train_poses, subok=True).astype(np.float32)
+    train_gazes = np.array(train_gazes, subok=True).astype(np.float32)
 
-    test_images = np.array(test_images, subok=True).astype(np.float64) / 255
-    test_poses = np.array(test_poses, subok=True).astype(np.float64)
-    test_gazes = np.array(test_gazes, subok=True).astype(np.float64)
+    test_images = np.array(test_images, subok=True).astype(np.float32) / 255
+    test_poses = np.array(test_poses, subok=True).astype(np.float32)
+    test_gazes = np.array(test_gazes, subok=True).astype(np.float32)
 
     return train_images, train_poses, train_gazes, test_images, test_poses, test_gazes

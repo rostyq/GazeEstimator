@@ -4,6 +4,7 @@ import pandas as pd
 from preprocess import *
 import os
 from nn import *
+from keras.models import load_model
 
 # If there is no dataset and utils:
 # if 'utils.py' not in os.listdir():
@@ -31,17 +32,19 @@ train_images, test_images = train_images[train_idx], test_images[test_idx]
 
 # Create NN
 model = create_model(learning_rate=0.01, seed=42)
-# callbacks = create_callbacks()
-# callbacks[0].set_model(model)
+# scope_dict = {'angle_accuracy': angle_accuracy}
+# model = load_model('./checkpoints/model_last_5degree.h5', custom_objects=scope_dict, compile=True)
+callbacks = create_callbacks()
+callbacks[0].set_model(model)
 
 # Train
 model.fit(
     x=[train_images, train_poses], y=train_gazes,
     batch_size=64,
     verbose=1,
-    epochs=10,
+    epochs=40,
     validation_data=([test_images, test_poses], test_gazes),
-    #callbacks=callbacks
+    callbacks=callbacks
     )
 
 model.save('./checkpoints/model_last.h5')
