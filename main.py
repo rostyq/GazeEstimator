@@ -1,6 +1,6 @@
 from calibration import Calibration
 from os import path, listdir
-from model import FacesRecognition
+from normalisation import FacesRecognition
 import cv2
 
 if __name__ == '__main__':

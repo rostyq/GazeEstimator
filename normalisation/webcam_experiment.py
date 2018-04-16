@@ -1,4 +1,5 @@
 from normalisation import FacesRecognition
+from normalisation.utils import *
 import cv2
 import tkinter as tk
 
@@ -11,27 +12,19 @@ def run_experiment(model = 'tutorial'):
     cv2.namedWindow("test", cv2.WND_PROP_FULLSCREEN)          
     cv2.setWindowProperty("test", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
-    fr = FacesRecognition(screen)
+    fece_recognitor = FacesRecognition(screen)
 
 
     i = 0
-    while(True):
+    while True:
         ret, frame = cap.read()
         key = cv2.waitKey(1)
 
         if key == 27:
             break
 
-        fr.set_image(frame)
-        fr.decect_faces()
-        if len(fr.rects) > 0:
-            fr.detect_landmarks()
-            fr.detect_faces_poses()
-            fr.detect_gazes()
+        extract_normalized_eye_pictures(fece_recognitor, frame)
 
-            fr.draw_eye_borders()
-            fr.draw_eye_centeres()
-            fr.draw_faces_rectangles()
 
 
 
