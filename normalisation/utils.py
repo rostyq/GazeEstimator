@@ -24,7 +24,6 @@ def extract_normalized_eye_pictures(recognitor, image):
     if len(recognitor.rects) > 0:
         recognitor.detect_landmarks()
         recognitor.detect_faces_poses()
-        recognitor.detect_gazes()
         return recognitor.produce_normalized_eye_frames()
 
     return None

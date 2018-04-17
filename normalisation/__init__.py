@@ -5,7 +5,7 @@ from scipy.io import loadmat
 from os import getcwd, path
 from estimator import estimate_gaze
 import dlib
-
+from .utils import extract_normalized_eye_pictures
 
 class FacesRecognition:
     def __init__(self, size, camera_matrix=None, dist_coeffs=None, model='tutorial'):
@@ -215,5 +215,3 @@ class FacesRecognition:
                                               face_pose[0], face_pose[1], self.camera_matrix, self.dist_coeffs)
             cv2.line(self.frame, (int(end_points[0][0][0]), int(end_points[0][0][1])),
                      (int(end_points[1][0][0]), int(end_points[1][0][1])), (255, 0, 0), 2)
-
-

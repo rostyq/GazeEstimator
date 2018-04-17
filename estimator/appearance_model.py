@@ -6,7 +6,7 @@ from numpy import array, flip
 
 scope_dict = {'angle_accuracy': angle_accuracy}
 # '/estimator/model_master.h5'
-model = load_model(getcwd() + '/estimator/checkpoints/model_last.h5', custom_objects=scope_dict, compile=True)
+model = load_model('estimator/model_master.h5', custom_objects=scope_dict, compile=True)
 
 def estimate_gaze(eye_image, head_pose, eye='left'):
 
