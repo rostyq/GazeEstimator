@@ -1,6 +1,4 @@
-from os import path, listdir, getcwd
-
-import cv2
+from os import path, listdir
 
 from calibration import Calibration
 from normalisation import DlibImageNormalizer
@@ -8,13 +6,14 @@ from normalisation.utils import *
 
 
 def run_experiment():
-    camera = Calibration(board_shape=(6, 4), path_to_dataset=r'calibration\stand_dataset\kinect')
+    camera = Calibration(board_shape=(6, 4), path_to_dataset=path.join(path.dirname(__file__),
+                                                                       r'..\calibration\stand_dataset\kinect'))
     # TODO calibration don't work properly
     camera.calibrate(method='dataset')
 
     # camera.load_metadata()
 
-    path_to_frames = getcwd() + r'\..\11_04_18\1523433382\DataSource\cam_0\ColorFrame'
+    path_to_frames = path.join(path.dirname(__file__), r'..\..\11_04_18\1523433382\DataSource\cam_0\ColorFrame')
 
     # for filename in :
     frame = path.join(path_to_frames, listdir(path_to_frames)[0])

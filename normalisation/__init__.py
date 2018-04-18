@@ -1,4 +1,4 @@
-from os import getcwd, path
+from os import path
 
 import cv2
 import dlib
@@ -59,7 +59,7 @@ class DlibImageNormalizer(ImageNormalizer):
         super().__init__(frame_size)
         # init of generic face model
         self.model = model
-        path_to_models = path.join(getcwd(), 'normalisation')
+        path_to_models = path.dirname(__file__)
         matfile = loadmat(path.join(path_to_models, f'6_points_face_model_{self.model}.mat'))
         if model == 'dataset':
             self.model_points = matfile['model'].T
