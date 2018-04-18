@@ -104,9 +104,9 @@ ENV/
 .idea/
 
 # datasets
-/estimator/dataset/
-/estimator/MPIIGaze/
-/dataset_gathering/Data/
+app/estimator/dataset/
+app/estimator/MPIIGaze/
+app/dataset_gathering/Data/
 
 # tensor board log
 /estimator/tblog/
