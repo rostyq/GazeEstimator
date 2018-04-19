@@ -1,58 +1,65 @@
-def create_experiment(average_distance, screen_diagonal):
+def run_experiment(average_distance, screen_diagonal, test_ticks=10):
 
-    from .normalisation import FacesRecognition, extract_normalized_eye_pictures
+    from .normalisation import FacesRecognition
+    from .normalisation import extract_normalized_eye_pictures
     from .estimator import estimate_gaze
-    from .cv2window import ExperimentWindow, create_random_coordinates, calc_pog_coordinates, ispressed
-    import cv2
-    import numpy as np
+    from .cv2window import ExperimentWindow
+    from .cv2window import Capture
+    from .cv2window import Ticker
+    from .cv2window import create_random_coordinates
+    from .cv2window import calc_pog_coordinates
+    from .cv2window import ispressed
+    from .cv2window import dummy_head_pose
 
-    capture = cv2.VideoCapture(0)
-    _, frame = capture.read()
+    capture = Capture(0)
+    ticker = Ticker(test_ticks)
+    window = ExperimentWindow(__name__, screen_diagonal)
+    face_recognitor = FacesRecognition(capture.frame_shape)
 
-    window = ExperimentWindow(__name__, screen_diagonal=screen_diagonal)
     window.open()
-    face_recognitor = FacesRecognition(frame.shape)
-
-    test_tick_counter = 0
-    test_tick_threshold = 10
-    test_coordinates = create_random_coordinates(window.screen_resolution)
+    window.draw_test_circle(create_random_coordinates(window.screen_resolution))
+    window.set_frame_as_background()
 
     while not ispressed(27):
 
-        _, frame = capture.read()
+        if ticker():
+            window.reset_frame()
+            window.draw_test_circle(create_random_coordinates(window.screen_resolution))
+            window.set_frame_as_background()
 
         try:
-            right_eye_img, left_eye_img = extract_normalized_eye_pictures(face_recognitor, frame)[0]
+            left_eye_img = extract_normalized_eye_pictures(
+                face_recognitor,
+                capture.get_frame()
+                )[0][1]
+            left_gaze_vector = estimate_gaze(
+                left_eye_img,
+                dummy_head_pose
+                ).reshape((3,))
+            pog_coordinates = calc_pog_coordinates(
+                average_distance,
+                left_gaze_vector,
+                window.screen_resolution,
+                window.screen_inches
+                )
+            window.put_text(
+                f'left gaze: {left_gaze_vector}',
+                (0, 40)
+                )
+            window.put_text(
+                f'coordinates: {pog_coordinates[0]}, {pog_coordinates[1]}',
+                (0, 80)
+                )
+            window.put_image(
+                left_eye_img.reshape((36, 60)),
+                (-37, -61)
+                )
+            window.draw_pog(pog_coordinates)
         except TypeError:
+            window.put_text('left gaze: No face - no eye :(', (0, 40))
             continue
+        finally:
+            window.show()
 
-        left_gaze_vector = estimate_gaze(left_eye_img, np.array([0, 0, 0])).reshape((3,))
-
-        window.put_text(f'left gaze: {left_gaze_vector}', (0, 40))
-
-        pog_coordinates = calc_pog_coordinates(
-            average_distance,
-            left_gaze_vector,
-            window.screen_resolution,
-            window.screen_inches
-            )
-
-        window.put_text(f'coordinates: {pog_coordinates[0]}, {pog_coordinates[1]}', (0, 80))
-
-        window.put_image(
-            left_eye_img.reshape((36, 60)),
-            (-37, -61)
-            )
-        if test_tick_counter >= 10:
-            test_coordinates = create_random_coordinates(window.screen_resolution)
-            test_tick_counter = 0
-
-        test_tick_counter += 1
-
-        window.draw_test_circle(test_coordinates)
-        window.draw_pog(pog_coordinates)
-        window.show()
-
-    # When everything done, release the capture
     capture.release()
     window.close()

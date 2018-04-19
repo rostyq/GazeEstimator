@@ -1,3 +1,3 @@
-from app import create_experiment
+from app import run_experiment
 
-create_experiment(average_distance=15, screen_diagonal=13.3)
+run_experiment(average_distance=12, screen_diagonal=13.3)
