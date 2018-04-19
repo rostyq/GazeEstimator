@@ -11,7 +11,7 @@ class FacesRecognition:
     def __init__(self, size, camera_matrix=None, dist_coeffs=None, model='tutorial'):
         # init generic face model
         self.model = model
-        path_to_models = path.join(getcwd(), 'app/models')
+        path_to_models = path.join(getcwd(), 'app/binaries')
         matfile = loadmat(path.join(path_to_models, f'6_points_face_model_{self.model}.mat'))
         if model == 'dataset':
             self.model_points = matfile['model'].T

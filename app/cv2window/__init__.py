@@ -2,22 +2,18 @@ import cv2
 import numpy as np
 
 
-def ispressed(button):
-    return True if cv2.waitKey(33) == button else False
+def ispressed(button, delay=1):
+    return True if cv2.waitKey(delay) == button else False
 
 def create_random_coordinates(screen_resolution):
     return np.random.randint(0, screen_resolution[0], size=1), np.random.randint(0, screen_resolution[1], size=1)
 
 def calc_pog_coordinates(distance, gaze_vector, screen_resolution, screen_inches):
-    # x = int((average_distance * left_gaze_vector[0] / (left_gaze_vector[2])) / (inch_width*0.5) * screen_resolution[1]*0.5+screen_resolution[1]*0.5)
-    # y = int((average_distance * left_gaze_vector[1] / (-left_gaze_vector[2])) / inch_height * screen_resolution[0])
     return tuple(map(
-        int,
-        [
+        int, [
             ((distance * gaze_vector[0] / gaze_vector[2]) / (0.5 * screen_inches[0]) + 1) * (0.5*screen_resolution[0]),
             (distance * gaze_vector[1] / (-gaze_vector[2])) / screen_inches[1] * screen_resolution[1]
-        ]
-                ))
+            ]))
 
 def get_screen_resolution():
     from tkinter import Tk
@@ -30,23 +26,55 @@ def get_screen_inches(screen_resolution, screen_diagonal):
     ratio = np.arctan(screen_resolution[0] / screen_resolution[1])
     return screen_diagonal * np.sin(ratio), screen_diagonal * np.cos(ratio)
 
+def create_black_background(screen_resolution):
+    return np.zeros(screen_resolution[::-1], dtype=np.uint8)
+
+
+dummy_head_pose = np.array([0, 0, 0])
+
+
+class Ticker:
+
+    def __init__(self, threshold):
+        self.threshold = threshold
+        self.tick = 0
+
+    def __call__(self):
+        if self.tick < self.threshold:
+            self.tick += 1
+            return False
+        else:
+            self.tick = 0
+            return True
+
+
+class Capture:
+
+    def __init__(self, target):
+        self.capture = cv2.VideoCapture(target)
+        self.frame_shape = self.get_frame().shape
+
+    def get_frame(self):
+        return self.capture.read()[1]
+
+    def release(self):
+        self.capture.release()
+
 
 class ExperimentWindow:
 
     font = cv2.FONT_HERSHEY_SIMPLEX
     line = cv2.LINE_AA
+
     @staticmethod
     def close_all():
         cv2.destroyAllWindows()
 
-    def __init__(self, name, screen_diagonal=None):
+    def __init__(self, name, screen_diagonal):
         self.name = name
         self.screen_resolution = get_screen_resolution()
-        self.screen_inches = get_screen_inches(
-            self.screen_resolution,
-            screen_diagonal
-            ) if (screen_diagonal is not None) else (None, None)
-        self._background = np.zeros(self.screen_resolution[::-1], dtype=np.uint8)
+        self.screen_inches = get_screen_inches(self.screen_resolution, screen_diagonal)
+        self._background = create_black_background(self.screen_resolution)
         self.frame = self.background
 
     @property
@@ -54,8 +82,17 @@ class ExperimentWindow:
         return np.copy(self._background)
 
     @background.setter
-    def set_background(self, image):
-        self._background = image
+    def background(self, image):
+        self._background = np.copy(image)
+
+    def set_frame_as_background(self):
+        self.background = np.copy(self.frame)
+
+    def reset_background(self):
+        self.background = create_black_background(self.screen_resolution)
+
+    def reset_frame(self):
+        self.frame = create_black_background(self.screen_resolution)
 
     def open(self):
         cv2.namedWindow(self.name, cv2.WND_PROP_FULLSCREEN)

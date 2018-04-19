@@ -108,11 +108,8 @@ app/estimator/dataset/
 app/estimator/MPIIGaze/
 app/dataset_gathering/Data/
 
-# tensor board log
-/estimator/tblog/
-
 # checkpoints
 checkpoints/
 
-# jupyter notebook
 *.ipynb
+*.csv
