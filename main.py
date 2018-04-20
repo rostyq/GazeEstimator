@@ -1,3 +1,4 @@
-from app import run_experiment
+from app.normalisation.webcam_experiment import run_experiment
 
-run_experiment(average_distance=12, screen_diagonal=13.3)
+if __name__ == '__main__':
+    run_experiment()
