@@ -62,7 +62,8 @@ def draw_eye_borders(normalisator):
 
     for face in normalisator.faces:
         (end_points2D, jacobian) = cv2.projectPoints(four_points_plane, face.rvec, face.tvec,
-                                                     normalisator.camera_matrix, normalisator.dist_coeffs)
+                                                     normalisator.calibration.matrix,
+                                                     normalisator.calibration.distortion)
         cv2.line(normalisator.frame, (int(end_points2D[0][0][0]), int(end_points2D[0][0][1])),
                  (int(end_points2D[1][0][0]), int(end_points2D[1][0][1])), (255, 0, 0), 2)
         cv2.line(normalisator.frame, (int(end_points2D[1][0][0]), int(end_points2D[1][0][1])),
@@ -81,7 +82,8 @@ def draw_gazes(normalisator):
         left_eye_center = np.array([150.0, -170.0, 135.0])
         left_eye_gaze = left_eye_center + 750 * face.gaze[0]
         end_points, _ = cv2.projectPoints(np.array([left_eye_center, left_eye_gaze]), face.rvec,
-                                          face.tvec, normalisator.camera_matrix, normalisator.dist_coeffs)
+                                          face.tvec, normalisator.calibration.matrix,
+                                          normalisator.calibration.distortion)
         cv2.line(normalisator.frame, (int(end_points[0][0][0]), int(end_points[0][0][1])),
                  (int(end_points[1][0][0]), int(end_points[1][0][1])), (255, 0, 0), 2)
 
@@ -89,7 +91,8 @@ def draw_gazes(normalisator):
         right_eye_center = np.array([-150.0, -170.0, 135.0])
         right_eye_gaze = right_eye_center + 750 * face.gaze[1]
         end_points, _ = cv2.projectPoints(np.array([right_eye_center, right_eye_gaze * np.array([-1, 1, 1])]),
-                                          face.rvec, face.tvec, normalisator.camera_matrix, normalisator.dist_coeffs)
+                                          face.rvec, face.tvec, normalisator.calibration.matrix,
+                                          normalisator.calibration.distortion)
         cv2.line(normalisator.frame, (int(end_points[0][0][0]), int(end_points[0][0][1])),
                  (int(end_points[1][0][0]), int(end_points[1][0][1])), (255, 0, 0), 2)
 

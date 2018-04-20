@@ -21,6 +21,10 @@ def run_experiment():
 
     # recognitor = FacesRecognition(image.shape, camera_matrix=camera.matrix, dist_coeffs=camera.distortion)
     normalizer = DlibImageNormalizer(image.shape)
+    normalizer.set_frame(frame)
+
+
+
     eyes = normalizer.get_normalized_eye_frames(image)
 
     draw_eye_borders(normalizer)

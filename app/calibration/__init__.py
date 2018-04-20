@@ -1,10 +1,11 @@
-from time import strftime
-from os import path, listdir, getcwd
-from yaml import dump, load
 from logging import basicConfig, getLogger, DEBUG
-import numpy as np
+from os import path, listdir
+from time import strftime
+
 import cv2
+import numpy as np
 from PIL import Image
+from yaml import dump, load
 
 basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             filename='log/{}.log'.format(__name__),
@@ -14,7 +15,7 @@ logger = getLogger(__name__)
 class Calibration:
 
     def __init__(self, board_shape, path_to_dataset = None):
-        self.path = path_to_dataset if path_to_dataset is not None else path.join(getcwd(), 'calibration/dataset')
+        self.path = path_to_dataset if path_to_dataset is not None else path.join(path.dirname(__file__), 'dataset')
         self.metadata = path.join(self.path, '{}.yaml'.format(__name__))
         self.object_points = list()
         self.frame_points = list()

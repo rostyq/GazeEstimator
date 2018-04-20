@@ -1,26 +1,20 @@
-import tkinter as tk
-
+from app.calibration import Calibration
 from app.normalisation import DlibImageNormalizer
 from app.normalisation.utils import *
 
 
-# from calibration import Calibration
-
-
-def run_experiment(model = 'tutorial'):
-    #camera = Calibration(board_shape=(6, 4), path_to_dataset=r'calibration\stand_dataset\kinect')
-    #camera.calibrate()
+def run_experiment():
+    camera = Calibration(board_shape=(6, 4))
+    camera.calibrate()
 
     cap = cv2.VideoCapture(0)
-    root = tk.Tk()
-    screen = root.winfo_screenheight(), root.winfo_screenwidth()
 
     # Display the resulting frame
     cv2.namedWindow(__name__, cv2.WND_PROP_FULLSCREEN)
     cv2.setWindowProperty(__name__, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     ret, frame = cap.read()
-    normalizer = DlibImageNormalizer(frame.shape)
+    normalizer = DlibImageNormalizer(frame.shape, calibration=camera)
 
     i = 0
     while cv2.waitKey(1) != 27:

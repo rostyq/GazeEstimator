@@ -6,6 +6,8 @@ import numpy as np
 from imutils import face_utils
 from scipy.io import loadmat
 
+from ..calibration import Calibration
+
 
 class Face:
     def __init__(self, rect):
@@ -18,25 +20,31 @@ class Face:
 
 class ImageNormalizer:
     '''
-    Create normalized images of eyes for every face
+    Create normalized images of eyes for every face. Is connected to one of the cameras
     '''
-    def __init__(self, frame_size):
-
+    def __init__(self, frame_size, calibration=None):
         self.faces = []
         self.frame = None
         self.gray = None
+        self.calibration = calibration
+        self.frame_size = frame_size
 
         # Camera intrinsic parameters
-        self.size = frame_size
-        self.focal_length = frame_size[1]
-        self.center = (self.size[1] / 2, self.size[0] / 2)
-        self.camera_matrix = np.array([[self.focal_length, 0, self.center[0]],
-                                      [0, self.focal_length, self.center[1]],
-                                      [0, 0, 1]], dtype="double")
-        self.dist_coeffs = np.zeros((4, 1))
+        if self.calibration is None:
+            self._default_intrinsic_calibration()
 
         # Other settings
         np.set_printoptions(precision=2)
+
+    def _default_intrinsic_calibration(self):
+        self.calibration = Calibration(board_shape=None)
+        focal_length = self.frame_size[1]
+        center = (self.frame_size[1] / 2, self.frame_size[0] / 2)
+        self.calibration.matrix = np.array([[focal_length, 0, center[0]],
+                                       [0, focal_length, center[1]],
+                                       [0, 0, 1]], dtype="double")
+        self.calibration.distortion = np.zeros((4, 1))
+
 
     def set_frame(self, frame):
         '''
@@ -47,7 +55,7 @@ class ImageNormalizer:
         self.frame = frame
         self.gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
 
-    def get_normalized_eye_frames(self, image):
+    def get_normalized_eye_frames(self, image, face_points_json):
         '''
         Generates normalized eye images of fixed shape (60, 36)
         :return: List of tuples: (left_eye_frame, right_eye_frame)
@@ -55,7 +63,7 @@ class ImageNormalizer:
         pass
 
 class DlibImageNormalizer(ImageNormalizer):
-    def __init__(self, frame_size, model='tutorial'):
+    def __init__(self, frame_size, model='tutorial', calibration=None):
         super().__init__(frame_size)
         # init of generic face model
         self.model = model
@@ -106,8 +114,8 @@ class DlibImageNormalizer(ImageNormalizer):
             person_points = np.array(person_face, dtype="double")
             (success, rotation_vector, translation_vector) = cv2.solvePnP(self.model_points,
                                                                           person_points,
-                                                                          self.camera_matrix,
-                                                                          self.dist_coeffs,
+                                                                          self.calibration.matrix,
+                                                                          self.calibration.distortion,
                                                                           flags=cv2.SOLVEPNP_ITERATIVE)
             self.faces[i].rvec = rotation_vector
             self.faces[i].tvec = translation_vector
@@ -158,7 +166,7 @@ class DlibImageNormalizer(ImageNormalizer):
 
             # Drawing plane in front of face
             four_points_plane_proj, _ = cv2.projectPoints(four_points_plane, face.rvec,
-                                                          face.tvec, self.camera_matrix, self.dist_coeffs)
+                                                          face.tvec, self.calibration.matrix, self.calibration.distortion)
 
             # Calculate Homography
             h, status = cv2.findHomography(four_points_plane_proj[:, 0, 0:2],
@@ -175,11 +183,61 @@ class DlibImageNormalizer(ImageNormalizer):
 
         return [face.norm_eye_frames for face in self.faces]
 
-    def get_normalized_eye_frames(self, image):
+    def get_normalized_eye_frames(self, image, face_points_json=None):
         self.set_frame(image)
         self.detect_faces()
         if len(self.faces):
             self.detect_landmarks()
             self.detect_faces_poses()
+            return self.extract_normalized_eye_frames()
+
+class StandNormalizazer(ImageNormalizer):
+    def __init__(self, frame_size, calibration):
+        super().__init__(frame_size, calibration)
+        self.camera_rvec = None
+        self.camera_tvec = np.array([0.05, 0., 0.])
+
+        #eye landmarks
+        self.right_eye_rect = [803, 828, 719, 969]
+        self.left_eye_rect = [346, 339, 115, 314]
+
+        #eye planes
+        self.left_norm_image_plane = np.array([[0.0, 0.0],
+                                             [120.0, 0.0],
+                                             [120.0, 72.0],
+                                             [0., 72.0]])
+        self.right_norm_image_plane = np.array([[120.0, 0.0],
+                                             [0.0, 0.0],
+                                             [0., 72.0],
+                                             [120.0, 72.0]])
+
+    def set_face_landmarks(self, face_points_json):
+        self.landmarks_camera_space = np.array([list(face_points_json[i].values()) for i in self.right_eye_rect + self.left_eye_rect])
+        self.landmarks_colored_space = (self.landmarks_camera_space + self.camera_tvec) * np.array([-1, 1, -1])
+
+    def extract_normalized_eye_frames(self):
+        end_points, _ = cv2.projectPoints(self.landmarks_colored_space, np.zeros((3, 1)),
+                                          np.zeros((3, 1)), self.calibration.matrix, self.calibration.distortion)
+        end_points = end_points.reshape((8, 2))
+
+        #left eye
+        h, status = cv2.findHomography(np.array(end_points)[:4], self.left_norm_image_plane)
+        left_eye_frame = cv2.warpPerspective(self.frame, h, (120, 72))
+
+        #right eye
+        h, status = cv2.findHomography(np.array(end_points)[4:], self.right_norm_image_plane)
+        right_eye_frame = cv2.warpPerspective(self.frame, h, (120, 72))
+
+        left_eye_frame, right_eye_frame = cv2.cvtColor(left_eye_frame, cv2.COLOR_BGR2GRAY), cv2.cvtColor(
+            right_eye_frame, cv2.COLOR_BGR2GRAY)
+        left_eye_frame, right_eye_frame = cv2.equalizeHist(left_eye_frame), cv2.equalizeHist(right_eye_frame)
+
+        return left_eye_frame, right_eye_frame
+
+    def get_normalized_eye_frames(self, image, face_points_json):
+        self.set_frame(image)
+        self.set_face_landmarks(face_points_json)
+
+        if len(self.landmarks_camera_space):
             return self.extract_normalized_eye_frames()
 
