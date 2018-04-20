@@ -1,7 +1,6 @@
 def run_experiment(average_distance, screen_diagonal, test_ticks=10):
 
-    from .normalisation import FacesRecognition
-    from .normalisation import extract_normalized_eye_pictures
+    from .normalisation import DlibImageNormalizer
     from .estimator import estimate_gaze
     from .cv2window import ExperimentWindow
     from .cv2window import Capture
@@ -14,7 +13,7 @@ def run_experiment(average_distance, screen_diagonal, test_ticks=10):
     capture = Capture(0)
     ticker = Ticker(test_ticks)
     window = ExperimentWindow(__name__, screen_diagonal)
-    face_recognitor = FacesRecognition(capture.frame_shape)
+    face_recognitor = DlibImageNormalizer(capture.frame_shape)
 
     window.open()
     window.draw_test_circle(create_random_coordinates(window.screen_resolution))
@@ -28,8 +27,7 @@ def run_experiment(average_distance, screen_diagonal, test_ticks=10):
             window.set_frame_as_background()
 
         try:
-            left_eye_img = extract_normalized_eye_pictures(
-                face_recognitor,
+            left_eye_img = face_recognitor.get_normalized_eye_frames(
                 capture.get_frame()
                 )[0][1]
             left_gaze_vector = estimate_gaze(
