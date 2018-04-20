@@ -1,3 +1,33 @@
+def show_charuco(path_to_image, screen_diagonal, square_length_cm, shift):
+
+    from .cv2window import ExperimentWindow
+    from .cv2window import ispressed
+    from .cv2window import read_grayscale_image
+    from .cv2window import resize_image
+    from numpy import full, uint8
+    from cv2 import imshow
+
+    charuco_window = ExperimentWindow('CHARUCO', screen_diagonal)
+    charuco_image = read_grayscale_image(path_to_image)
+
+    y, x = charuco_image.shape
+    square_length = y // 4
+    square_length_inch = square_length_cm * 0.3937007874
+    dpi = charuco_window.screen_resolution[0] / charuco_window.screen_inches[0]
+    ynew = int(y*square_length_inch*dpi/square_length)
+    xnew = int(ynew*(x/y))
+
+    charuco_image = resize_image(charuco_image, (xnew, ynew))
+    new_charuco = full(charuco_window.screen_resolution[::-1], 255, dtype=uint8)
+
+    new_charuco[shift[0]:charuco_image.shape[0]+shift[0], shift[1]:charuco_image.shape[1]+shift[1]] = charuco_image
+    charuco_window.background = new_charuco
+
+    charuco_window.open()
+    while not ispressed(27):
+        charuco_window.show()
+    charuco_window.close()
+
 def run_experiment(average_distance, screen_diagonal, test_ticks=10):
 
     from .normalisation import FacesRecognition

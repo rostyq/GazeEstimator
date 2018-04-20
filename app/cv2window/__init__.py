@@ -29,6 +29,12 @@ def get_screen_inches(screen_resolution, screen_diagonal):
 def create_black_background(screen_resolution):
     return np.zeros(screen_resolution[::-1], dtype=np.uint8)
 
+def read_grayscale_image(path_to_image):
+    return cv2.imread(path_to_image, 0)
+
+def resize_image(*args, **kwargs):
+    return cv2.resize(*args, **kwargs)
+
 
 dummy_head_pose = np.array([0, 0, 0])
 
