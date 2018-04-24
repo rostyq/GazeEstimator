@@ -27,7 +27,7 @@ def run_experiment(average_distance, screen_diagonal, test_ticks=10):
             window.set_frame_as_background()
 
         try:
-            left_eye_img = face_recognitor.get_normalized_eye_frames(
+            left_eye_img = face_recognitor.fit_transform(
                 capture.get_frame()
                 )[0][1]
             left_gaze_vector = estimate_gaze(

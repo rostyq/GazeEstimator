@@ -20,7 +20,7 @@ def run_experiment():
     while cv2.waitKey(1) != 27:
         ret, frame = cap.read()
 
-        eyes = normalizer.get_normalized_eye_frames(frame)
+        eyes = normalizer.fit_transform(frame)
         draw_eye_centeres(normalizer)
         draw_faces_rectangles(normalizer)
         draw_eye_borders(normalizer)

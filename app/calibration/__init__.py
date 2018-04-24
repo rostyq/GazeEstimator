@@ -59,7 +59,7 @@ class Calibration:
         dataset_path = self.path if not dataset_path else dataset_path
         for filename in listdir(dataset_path):
             frame = path.join(dataset_path, filename)
-            if path.isfile(frame) and (frame.endswith('.png') or frame.endswith('.jpg')):
+            if path.isfile(frame) and (frame.endswith('.png') or frame.endswith('.jpg') or frame.endswith('.bmp')):
                 self.frame = cv2.imread(frame)
                 self.retrieval, corners = self.find_corners()
                 if self.retrieval:

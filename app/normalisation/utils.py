@@ -39,7 +39,7 @@ def draw_eye_centeres(normalisator):
     Draw all eye centers
     :return: None
     '''
-    for eye_landmark in normalisator.extract_eye_landmarks():
+    for eye_landmark in normalisator._extract_eye_landmarks():
         # drawing eyes centers
         eyes = np.array(eye_landmark)
         l_eye, r_eye = eyes[:6], eyes[6:]
