@@ -184,7 +184,7 @@ def draw_eye_centers(normalizer):
         for end_point in end_points:
             _ = cv2.circle(normalizer.frame, (int(end_point[0]), int(end_point[1])), 5, (255, 0, 0), -1)
 
-def draw_gazes(normalizer):
+def draw_gazes_stand(normalizer):
     for face in normalizer.faces:
         left_eye_center = face.left_eye_center
         face_rot, _ = cv2.Rodrigues(face.rvec)

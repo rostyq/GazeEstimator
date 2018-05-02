@@ -67,7 +67,7 @@ def run_coarse_experiment(average_distance, screen_diagonal, path_to_estimator,
         ticks += 1
 
         try:
-            left_eye_img = face_recognitor.get_normalized_eye_frames(capture.read()[1])[0][1]
+            left_eye_img = face_recognitor.fit_transform(capture.read()[1])[0][1]
             left_gaze_vector = estimate_gaze(left_eye_img,
                                              dummy_head_pose,
                                              gaze_estimator)
@@ -176,18 +176,16 @@ class Experiment:
 
 
 if __name__ == '__main__':
-    path_to_frames = [path.join(path.dirname(__file__),
-                                 r'../../11_04_18/1523433382/DataSource/cam_0/ColorFrame'),
-                       path.join(path.dirname(__file__),
-                                 r'../..\20_04_2018\20_04_18\1524238461\DataSource/cam_1/ColorFrame'),
-                       path.join(path.dirname(__file__),
-                                 r'../..\misha/Colored')]
-    path_to_face_points = [path.join(path.dirname(__file__),
-                                      r'../../11_04_18/1523433382/DataSource/cam_0/FacePoints'),
-                            path.join(path.dirname(__file__),
-                                      r'../..\20_04_2018\20_04_18\1524238461/DataSource/cam_1/FacePoints'),
-                            path.join(path.dirname(__file__),
-                                      r'../..\misha/FacePoints')]
+    # path_to_frames = [path.join(path.dirname(__file__),
+    #                              r'../../11_04_18/1523433382/DataSource/cam_0/ColorFrame'),
+    #                    path.join(path.dirname(__file__),
+    #                              r'../..\20_04_2018\20_04_18\1524238461\DataSource/cam_1/ColorFrame'),
+    #                    ]
+    # path_to_face_points = [path.join(path.dirname(__file__),
+    #                                   r'../../11_04_18/1523433382/DataSource/cam_0/FacePoints'),
+    #                         path.join(path.dirname(__file__),
+    #                                   r'../..\20_04_2018\20_04_18\1524238461/DataSource/cam_1/FacePoints'),
+    #                         ]
 
     path_to_frames = [path.join(path.dirname(__file__),
                                  r'../../11_04_18/1523433382/DataSource/cam_1/InfraredFrame'),

@@ -69,7 +69,7 @@ class DlibImageNormalizer(ImageNormalizer):
         # init of generic face model
         self.model = model
         path_to_models = path.dirname(__file__)
-        matfile = loadmat(path.join(path_to_models, f'../binaries/6_points_face_model_{self.model}.mat'))
+        matfile = loadmat(path.join(path_to_models, f'../bin/face_points_{self.model}.mat'))
         if model == 'dataset':
             self.model_points = matfile['model'].T
             self.model_points = self.model_points * np.array([1, 1, -1])
@@ -97,7 +97,7 @@ class DlibImageNormalizer(ImageNormalizer):
         # init dlib face detector and landmark predictor
         self.detector = dlib.get_frontal_face_detector()
         self.predictor = dlib.shape_predictor(path.join(path_to_models,
-                                                        '../binaries/shape_predictor_68_face_landmarks.dat'))
+                                                        '../bin/face_landmarks.dat'))
 
     def _detect_faces(self):
         self.faces = [Face(rect) for rect in self.detector(self.gray, 1)]
