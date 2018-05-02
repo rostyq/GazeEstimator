@@ -9,15 +9,15 @@ from config import *
 
 def run_experiment():
     camera = Calibration(None)
-    current_camera = basler
+    current_camera = cameras['basler']
     dataset = 1
+
     path_to_frames = current_camera['path_to_frames'][dataset]
     path_to_face_points = current_camera['path_to_face_points'][dataset]
     path_to_face_poses = current_camera['path_to_face_poses'][dataset]
     camera.camera_matrix = current_camera['matrix']
     camera.distortion_vector = current_camera['distortion']
 
-    i = 0
     for frame, face_points, face_poses in \
             zip(listdir(path_to_frames)[10:11],
                 listdir(path_to_face_points)[10:11],
@@ -25,7 +25,6 @@ def run_experiment():
         frame = path.join(path_to_frames, frame)
         image = cv2.imread(frame)
 
-        # TODO with construction
         face_points = open(path.join(path_to_face_points, face_points)).read()
         face_points = json.loads(face_points)
 

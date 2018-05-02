@@ -1,41 +1,19 @@
-from os import path
-
 import numpy as np
 
-colored_camera = {'matrix': np.array([[1.0487, 0., 0.9607],
-                                          [0., 1.0505, 0.5409],
-                                          [0., 0., 0.001]]) * 1.0e+03,
-                      'distortion': np.zeros(4),
-                      'rotation_vector': np.zeros((3, 1)),
-                      'translation_vector': np.array([[0.0322945], [-0.0007767], [-0.0331078]]),
-                      'path_to_frames': [path.join(path.dirname(__file__),
-                                                   r'../11_04_18/1523433382/DataSource/cam_0/ColorFrame'),
-                                         path.join(path.dirname(__file__),
-                                                   r'..\20_04_2018\20_04_18\1524238461\DataSource/cam_1/ColorFrame'),
-                                         path.join(path.dirname(__file__),
-                                                   r'..\misha/Colored')],
-                      'path_to_face_points': [path.join(path.dirname(__file__),
-                                                        r'../11_04_18/1523433382/DataSource/cam_0/FacePoints'),
-                                              path.join(path.dirname(__file__),
-                                                        r'..\20_04_2018\20_04_18\1524238461/DataSource/cam_1/FacePoints'),
-                                              path.join(path.dirname(__file__),
-                                                        r'..\misha/FacePoints')]}
+cameras = {
+    'colored_camera': {'matrix': np.array([[1.0487, 0., 0.9607],
+                                           [0., 1.0505, 0.5409],
+                                           [0., 0., 0.001]]) * 1.0e+03,
+                       'distortion': np.zeros(4),
+                       'rotation_vector': np.zeros((3, 1)),
+                       'translation_vector': np.array([[0.0322945], [-0.0007767], [-0.0331078]])},
 
-basler = {'matrix': np.array([[2.6155, -0.0035, 0.6576],
-                              [0., 2.6178, 0.4682],
-                              [0., 0., 0.001]]) * 1.0e+03,
-                  'distortion': np.array([-0.5195, 0.3594, -0.0022, -0.0004]),
-                  'rotation_vector': np.array([[-0.075], [0.005], [0.]]),
-                  'translation_vector': np.array([[0.137], [0.044], [0.]]),
-                  'path_to_frames': [path.join(path.dirname(__file__),
-                                               r'../11_04_18/1523433382/DataSource/cam_1/InfraredFrame'),
-                                     path.join(path.dirname(__file__),
-                                               r'../20_04_2018/20_04_18/1524238461/DataSource/cam_2/InfraredFrame')],
-                  'path_to_face_points': [path.join(path.dirname(__file__),
-                                            r'../11_04_18/1523433382/DataSource/cam_0/FacePoints'),
-                                          path.join(path.dirname(__file__),
-                                            r'../20_04_2018/20_04_18/1524238461/DataSource/cam_1/FacePoints')],
-                  'path_to_face_poses': [path.join(path.dirname(__file__),
-                                            r'../11_04_18/1523433382/DataSource/cam_0/FaceFrame'),
-                                         path.join(path.dirname(__file__),
-                                                   r'../20_04_2018/20_04_18/1524238461/DataSource/cam_1/FaceFrame')]}
+    'basler': {'matrix': np.array([[2.6155, -0.0035, 0.6576],
+                                   [0., 2.6178, 0.4682],
+                                   [0., 0., 0.001]]) * 1.0e+03,
+               'distortion': np.array([-0.5195, 0.3594, -0.0022, -0.0004]),
+               'rotation_vector': np.array([[-0.075], [0.005], [0.]]),
+               'translation_vector': np.array([[0.137], [0.044], [0.]])}
+}
+
+
