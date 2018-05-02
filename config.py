@@ -1,5 +1,5 @@
 # path to gaze estimator model
-PATH_TO_ESTIMATOR = './app/binaries/estimator.h5'
+PATH_TO_ESTIMATOR = './app/bin/estimator.h5'
 
 # default config for coarse experiment
 ESCAPE = 27

@@ -67,35 +67,25 @@ def run_coarse_experiment(average_distance, screen_diagonal, path_to_estimator,
         ticks += 1
 
         try:
-            left_eye_img = face_recognitor.get_normalized_eye_frames(
-                capture.read()[1]
-                )[0][1]
-            left_gaze_vector = estimate_gaze(
-                left_eye_img,
-                dummy_head_pose,
-                gaze_estimator
-                )
-            pog_coordinates = calc_pog_coordinates(
-                average_distance,
-                left_gaze_vector,
-                window.screen_resolution,
-                window.screen_inches
-                )
-            window.put_text(
-                f'left gaze: {left_gaze_vector}',
-                (0, 40)
-                )
-            window.put_text(
-                f'coordinates: {pog_coordinates[0]}, {pog_coordinates[1]}',
-                (0, 80)
-                )
-            window.put_image(
-                left_eye_img.reshape((36, 60)),
-                (-37, -61)
-                )
+            left_eye_img = face_recognitor.get_normalized_eye_frames(capture.read()[1])[0][1]
+            left_gaze_vector = estimate_gaze(left_eye_img,
+                                             dummy_head_pose,
+                                             gaze_estimator)
+            pog_coordinates = calc_pog_coordinates(average_distance,
+                                                   left_gaze_vector,
+                                                   window.screen_resolution,
+                                                   window.screen_inches)
+            # checking data on the screen
+            window.put_text(f'left gaze: {left_gaze_vector}',
+                            (0, 40))
+            window.put_text(f'coordinates: {pog_coordinates[0]}, {pog_coordinates[1]}',
+                            (0, 80))
+            window.put_image(left_eye_img.reshape((36, 60)),
+                             (-37, -61))
             window.draw_pog(pog_coordinates)
         except TypeError:
-            window.put_text('left gaze: No face - no eye :(', (0, 40))
+            window.put_text('left gaze: No face - no eye :(',
+                            (0, 40))
             continue
         finally:
             window.show()

@@ -31,8 +31,9 @@ class ImageNormalizer:
         self.focal_length = frame_size[1]
         self.center = (self.size[1] / 2, self.size[0] / 2)
         self.camera_matrix = np.array([[self.focal_length, 0, self.center[0]],
-                                      [0, self.focal_length, self.center[1]],
-                                      [0, 0, 1]], dtype="double")
+                                       [0, self.focal_length, self.center[1]],
+                                       [0, 0, 1]],
+                                      dtype="double")
         self.dist_coeffs = np.zeros((4, 1))
 
         # Other settings
@@ -60,7 +61,7 @@ class DlibImageNormalizer(ImageNormalizer):
         # init of generic face model
         self.model = model
         path_to_models = path.dirname(__file__)
-        matfile = loadmat(path.join(path_to_models, f'../binaries/6_points_face_model_{self.model}.mat'))
+        matfile = loadmat(path.join(path_to_models, f'../bin/face_points_{self.model}.mat'))
         if model == 'dataset':
             self.model_points = matfile['model'].T
             self.model_points = self.model_points * np.array([1, 1, -1])
@@ -69,26 +70,25 @@ class DlibImageNormalizer(ImageNormalizer):
                                        43: 2,  # Right eye left corner
                                        46: 3,  # Right eye right corner
                                        49: 4,  # Left Mouth corner
-                                       55: 5  # Right mouth corner
-                                       }
+                                       55: 5}  # Right mouth corner
+
         elif model == 'tutorial':
             self.eye_height = 70
             self.model_points = matfile['model']
             self.model_points = self.model_points * np.array([1, -1, -1])
             self.landmarks_to_model = {31: 0,  # Nose tip
-                                       9: 1,  # Chin
+                                       9: 1,   # Chin
                                        37: 2,  # Left eye left corner
                                        46: 3,  # Right eye right corner
                                        49: 4,  # Left Mouth corner
-                                       55: 5  # Right mouth corner
-                                       }
+                                       55: 5}  # Right mouth corner
+
         else:
             raise Exception('Not supported model!')
 
         # init dlib face detector and landmark predictor
         self.detector = dlib.get_frontal_face_detector()
-        self.predictor = dlib.shape_predictor(path.join(path_to_models,
-                                                        '../binaries/shape_predictor_68_face_landmarks.dat'))
+        self.predictor = dlib.shape_predictor(path.join(path_to_models, '../bin/face_landmarks.dat'))
 
     def detect_faces(self):
         self.faces = [Face(rect) for rect in self.detector(self.gray, 1)]
@@ -118,7 +118,7 @@ class DlibImageNormalizer(ImageNormalizer):
         :param draw:
         :return: Eye landmarks for every face
         '''
-        # TODO It works only for model == 'tutorial'
+        # TODO It works only for model == 'tutorial'                            ## What the FUCK?!
         landmarks = []
         for (k, face) in enumerate(self.faces):
             landmarks.append([])
@@ -141,36 +141,41 @@ class DlibImageNormalizer(ImageNormalizer):
 
     def extract_normalized_eye_frames(self):
         '''
-        Generates normalized eye images of fixed shape (60, 36)
+        Generates normalized eye images of fixed shape (60, 36)                 ## What the FUCK?!
         :return: List of tuples: (left_eye_frame, right_eye_frame)
         '''
-        # TODO Remove hardcode
         # generic canvas for eyes
-        l_eye, r_eye = self.model_points[2], self.model_points[3]
+        left_eye, right_eye = self.model_points[2], self.model_points[3]
 
-        four_points_plane = np.array([(l_eye[0], l_eye[1] - self.eye_height, l_eye[2]),
-                                      (r_eye[0], l_eye[1] - self.eye_height, l_eye[2]),
-                                      (r_eye[0], l_eye[1] + self.eye_height, l_eye[2]),
-                                      (l_eye[0], l_eye[1] + self.eye_height, l_eye[2])], dtype="double")
-        translation_to_eyes = - np.array([l_eye[0], l_eye[1] - self.eye_height])
+        four_points_plane = np.array([(left_eye[0], left_eye[1] - self.eye_height, left_eye[2]),
+                                      (right_eye[0], left_eye[1] - self.eye_height, left_eye[2]),
+                                      (right_eye[0], left_eye[1] + self.eye_height, left_eye[2]),
+                                      (left_eye[0], left_eye[1] + self.eye_height, left_eye[2])],
+                                     dtype="double")
+        translation_to_eyes = - np.array([left_eye[0], left_eye[1] - self.eye_height])
 
         for face in self.faces:
 
             # Drawing plane in front of face
-            four_points_plane_proj, _ = cv2.projectPoints(four_points_plane, face.rvec,
-                                                          face.tvec, self.camera_matrix, self.dist_coeffs)
+            four_points_plane_proj, _ = cv2.projectPoints(four_points_plane,
+                                                          face.rvec,
+                                                          face.tvec,
+                                                          self.camera_matrix,
+                                                          self.dist_coeffs)
 
             # Calculate Homography
             h, status = cv2.findHomography(four_points_plane_proj[:, 0, 0:2],
                                            four_points_plane[:, 0:2] + translation_to_eyes)
 
             eyes = cv2.warpPerspective(self.frame, h, (225 * 2, 70 * 2))
-            left_eye_frame, right_eye_frame = eyes[25:-25, :150], eyes[25:-25, -150:]
-            left_eye_frame, right_eye_frame = cv2.resize(left_eye_frame, (60, 36)), cv2.resize(right_eye_frame,
-                                                                                               (60, 36))
-            left_eye_frame, right_eye_frame = cv2.cvtColor(left_eye_frame, cv2.COLOR_BGR2GRAY), cv2.cvtColor(
-                right_eye_frame, cv2.COLOR_BGR2GRAY)
-            left_eye_frame, right_eye_frame = cv2.equalizeHist(left_eye_frame), cv2.equalizeHist(right_eye_frame)
+            left_eye_frame = eyes[25:-25, :150]
+            right_eye_frame = eyes[25:-25, -150:]
+            left_eye_frame = cv2.resize(left_eye_frame, (60, 36))
+            right_eye_frame = cv2.resize(right_eye_frame, (60, 36))
+            left_eye_frame = cv2.cvtColor(left_eye_frame, cv2.COLOR_BGR2GRAY)
+            right_eye_frame = cv2.cvtColor(right_eye_frame, cv2.COLOR_BGR2GRAY)
+            left_eye_frame = cv2.equalizeHist(left_eye_frame)
+            right_eye_frame = cv2.equalizeHist(right_eye_frame)
             face.norm_eye_frames = (left_eye_frame, right_eye_frame)
 
         return [face.norm_eye_frames for face in self.faces]
@@ -182,4 +187,3 @@ class DlibImageNormalizer(ImageNormalizer):
             self.detect_landmarks()
             self.detect_faces_poses()
             return self.extract_normalized_eye_frames()
-
