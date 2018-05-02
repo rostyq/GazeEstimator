@@ -1,6 +1,5 @@
 from keras.models import load_model
-from .transform import gaze2Dto3D
-from .transform import pose3Dto2D
+from .transform import gaze2Dto3D, pose3Dto2D
 from .nn import angle_accuracy
 from os import getcwd
 from numpy import reshape
