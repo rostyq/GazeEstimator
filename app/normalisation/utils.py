@@ -5,11 +5,12 @@ import numpy as np
 from imutils import face_utils
 
 
-# x = qx / sqrt(1-qw*qw)
-# y = qy / sqrt(1-qw*qw)
-# z = qz / sqrt(1-qw*qw)
-
 def quaternion_to_angle_axis(quaternion):
+    """
+    Convert angle-axis to quaternion
+    :param quaternion: dict {'X': , 'Y': , 'Z': , 'W': }
+    :return: angle-axis rotation vector
+    """
     t = sqrt(1-quaternion['W']*quaternion['W'])
     if t != 0:
         x = quaternion['X'] / t
@@ -17,13 +18,30 @@ def quaternion_to_angle_axis(quaternion):
         z = quaternion['Z'] / t
         return np.array([[x], [y], [z]])
     else:
-        return np.zeros((3,1))
+        return np.zeros((3, 1))
+
+def POG_to_kinect_space(POGX, POGY, screen_size, diagonal_in_meters, rvec, tvec):
+    """
+    :param POGX: Gazepoint FPOGX/BPOGX
+    :param POGY: Gazepoint FPOGY/BPOGY
+    :param screen_size: tuple (width, height) in pixels
+    :param diagonal_in_meters: screen diagonal in meters
+    :param rvec: screen rotation vector (extrinsic parameter)
+    :param tvec: screen translation vector (extrinsic parameter)
+    :return: POG in 3D kinect space
+    """
+    meters_per_pixel = diagonal_in_meters / np.sqrt(screen_size[0]**2 + screen_size[1]**2)
+    POG_meters = np.array([[POGX * screen_size[0] * meters_per_pixel],
+                           [POGY * screen_size[1] * meters_per_pixel],
+                           [0.0]])
+    rot_matr, _ = cv2.Rodrigues(rvec)
+    return POG_meters @ rot_matr + tvec
 
 def draw_faces_rectangles(normalisator):
-    '''
+    """
     Draw all faces rectangle and numbers all rectangles
     :return: None
-    '''
+    """
     for (k, face) in enumerate(normalisator.faces):
         # convert dlib's rectangle to a OpenCV-style bounding box
         # [i.e., (x, y, w, h)], then draw the face bounding box
@@ -35,10 +53,10 @@ def draw_faces_rectangles(normalisator):
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
 def draw_eye_centeres(normalisator):
-    '''
+    """
     Draw all eye centers
     :return: None
-    '''
+    """
     for eye_landmark in normalisator._extract_eye_landmarks():
         # drawing eyes centers
         eyes = np.array(eye_landmark)
@@ -49,10 +67,10 @@ def draw_eye_centeres(normalisator):
         cv2.circle(normalisator.frame, tuple(r_eye_c.astype(int)), 1, (0, 0, 255), -1)
 
 def draw_eye_borders(normalisator):
-    '''
+    """
     Draws rectangles around eyes
     :return: None
-    '''
+    """
     l_eye, r_eye = normalisator.model_points[2], normalisator.model_points[3]
     normalisator.eye_height = 70
     four_points_plane = np.array([(l_eye[0], l_eye[1] - normalisator.eye_height, l_eye[2]),
@@ -62,8 +80,8 @@ def draw_eye_borders(normalisator):
 
     for face in normalisator.faces:
         (end_points2D, jacobian) = cv2.projectPoints(four_points_plane, face.rvec, face.tvec,
-                                                     normalisator.calibration.matrix,
-                                                     normalisator.calibration.distortion)
+                                                     normalisator.calibration.camera_matrix,
+                                                     normalisator.calibration.distortion_vector)
         cv2.line(normalisator.frame, (int(end_points2D[0][0][0]), int(end_points2D[0][0][1])),
                  (int(end_points2D[1][0][0]), int(end_points2D[1][0][1])), (255, 0, 0), 2)
         cv2.line(normalisator.frame, (int(end_points2D[1][0][0]), int(end_points2D[1][0][1])),
@@ -74,7 +92,10 @@ def draw_eye_borders(normalisator):
                  (int(end_points2D[0][0][0]), int(end_points2D[0][0][1])), (255, 0, 0), 2)
 
 def draw_gazes(normalisator):
-
+    """
+        Draws vector of gazes on image
+        :return: None
+        """
     for (i, face) in enumerate(normalisator.faces):
         left_eye_frame, right_eye_frame = normalisator.norm_eye_frames[i]
 
@@ -82,8 +103,8 @@ def draw_gazes(normalisator):
         left_eye_center = np.array([150.0, -170.0, 135.0])
         left_eye_gaze = left_eye_center + 750 * face.gaze[0]
         end_points, _ = cv2.projectPoints(np.array([left_eye_center, left_eye_gaze]), face.rvec,
-                                          face.tvec, normalisator.calibration.matrix,
-                                          normalisator.calibration.distortion)
+                                          face.tvec, normalisator.calibration.camera_matrix,
+                                          normalisator.calibration.distortion_vector)
         cv2.line(normalisator.frame, (int(end_points[0][0][0]), int(end_points[0][0][1])),
                  (int(end_points[1][0][0]), int(end_points[1][0][1])), (255, 0, 0), 2)
 
@@ -91,8 +112,8 @@ def draw_gazes(normalisator):
         right_eye_center = np.array([-150.0, -170.0, 135.0])
         right_eye_gaze = right_eye_center + 750 * face.gaze[1]
         end_points, _ = cv2.projectPoints(np.array([right_eye_center, right_eye_gaze * np.array([-1, 1, 1])]),
-                                          face.rvec, face.tvec, normalisator.calibration.matrix,
-                                          normalisator.calibration.distortion)
+                                          face.rvec, face.tvec, normalisator.calibration.camera_matrix,
+                                          normalisator.calibration.distortion_vector)
         cv2.line(normalisator.frame, (int(end_points[0][0][0]), int(end_points[0][0][1])),
                  (int(end_points[1][0][0]), int(end_points[1][0][1])), (255, 0, 0), 2)
 
@@ -115,3 +136,23 @@ def draw_face_norm(self, screen):
 
         cv2.circle(self.background, (x, y), 20, 100, -1)
         cv2.putText(self.background, str((x, y)), (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 100, 2)
+
+def draw_eye_centers(normalizer):
+    for face in normalizer.faces:
+        end_points, _ = cv2.projectPoints(np.array([face.left_eye_center, face.right_eye_center]), np.zeros((3, 1)),
+                                          np.zeros((3, 1)), normalizer.calibration.camera_matrix,
+                                          normalizer.calibration.distortion_vector)
+        end_points = end_points.reshape((-1, 2))
+        for end_point in end_points:
+            _ = cv2.circle(normalizer.frame, (int(end_point[0]), int(end_point[1])), 5, (255, 0, 0), -1)
+
+def draw_gazes(normalizer):
+    for face in normalizer.faces:
+        left_eye_center = face.left_eye_center
+        face_rot, _ = cv2.Rodrigues(face.rvec)
+        gaze_in_kinect_space = np.linalg.inv(face_rot) @ (face.gaze * 1) + left_eye_center
+        end_points, _ = cv2.projectPoints(np.array([left_eye_center, gaze_in_kinect_space]), np.zeros((3, 1)),
+                                          np.zeros((3, 1)), normalizer.calibration.camera_matrix,
+                                          normalizer.calibration.distortion_vector)
+        cv2.line(normalizer.frame, (int(end_points[0][0][0]), int(end_points[0][0][1])),
+                 (int(end_points[1][0][0]), int(end_points[1][0][1])), (255, 0, 0), 2)

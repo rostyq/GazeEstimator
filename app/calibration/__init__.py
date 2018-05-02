@@ -68,15 +68,15 @@ class Calibration:
                     self.frame_points.append(self.corners_subpixel(corners))
 
     def calibrate_camera(self):
-        self.retrieval, self.matrix, self.distortion, self.rotation, \
+        self.retrieval, self.camera_matrix, self.distortion_vector, self.rotation, \
         self.translation = cv2.calibrateCamera(self.object_points,
                                            self.frame_points,
                                            self.frame_to_grey().shape[::-1],
                                            None, None)
 
     def dump_metadata(self):
-        metadata = {'camera_matrix':np.asarray(self.matrix).tolist(),
-                    'distortion_coefficient':np.asarray(self.distortion).tolist(),
+        metadata = {'camera_matrix':np.asarray(self.camera_matrix).tolist(),
+                    'distortion_coefficient':np.asarray(self.distortion_vector).tolist(),
                     'rotation_vector':np.asarray(self.rotation).tolist(),
                     'translation_vector':np.asarray(self.translation).tolist()}
         with open(self.metadata, 'w') as _file:
@@ -85,14 +85,14 @@ class Calibration:
     def load_metadata(self):
         with open(self.metadata) as _file:
             metadata = load(_file)
-        self.matrix = np.array(metadata.get('camera_matrix'))
-        self.distortion = np.array(metadata.get('distortion_coefficient'))
+        self.camera_matrix = np.array(metadata.get('camera_matrix'))
+        self.distortion_vector = np.array(metadata.get('distortion_coefficient'))
         self.rotation = [np.array(vector) for vector in metadata.get('rotation_vector')]
         self.translation = [np.array(vector) for vector in metadata.get('translation_vector')]
 
     def metadata_logger(self):
-        logger.info('Camera Matrix: {}'.format(self.matrix))
-        logger.info('Distortion factor: {}'.format(self.distortion))
+        logger.info('Camera Matrix: {}'.format(self.camera_matrix))
+        logger.info('Distortion factor: {}'.format(self.distortion_vector))
         logger.info('Rotation vectors: {}'.format(self.rotation))
         logger.info('Translation vectors: {}'.format(self.translation))
 

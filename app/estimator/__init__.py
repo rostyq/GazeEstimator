@@ -1,11 +1,12 @@
-from keras.models import load_model
-from .transform import gaze2Dto3D, pose3Dto2D
-from .nn import angle_accuracy
-from os import getcwd
+from os import path
 
+from keras.models import load_model
+
+from .nn import angle_accuracy
+from .transform import gaze2Dto3D, pose3Dto2D
 
 model = load_model(
-    f'{getcwd()}/app/binaries/estimator.h5',
+    f'{path.dirname(__file__)}/../binaries/estimator.h5',
     custom_objects={'angle_accuracy': angle_accuracy},
     compile=True
     )

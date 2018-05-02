@@ -61,3 +61,7 @@ def run_experiment(average_distance, screen_diagonal, test_ticks=10):
 
     capture.release()
     window.close()
+
+
+class Experiment:
+    pass
