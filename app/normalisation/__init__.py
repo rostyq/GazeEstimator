@@ -7,8 +7,8 @@ from imutils import face_utils
 from scipy.io import loadmat
 from sklearn.base import BaseEstimator
 
+from app.calibration import Calibration
 from app.normalisation.utils import quaternion_to_angle_axis
-from ..calibration import Calibration
 
 
 class Face:
@@ -24,6 +24,7 @@ class Face:
         self.real_left_gaze = None
         self.norm_eye_frames = tuple()
 
+# TODO Transfer all constants to config.py
 
 class ImageNormalizer(BaseEstimator):
     """

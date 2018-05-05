@@ -204,7 +204,11 @@ def _draw_endpoints(end_points, frame):
         _ = cv2.circle(frame, (int(end_point[0]), int(end_point[1])), 10, (0, 255, 0), -1)
         
 def _draw_gaze_lines(end_points, frame):
-    cv2.line(frame, (int(end_points[0][0]), int(end_points[0][1])),
-             (int(end_points[1][0]), int(end_points[1][1])), (255, 0, 0), 2)
-    cv2.line(frame, (int(end_points[2][0]), int(end_points[2][1])),
-             (int(end_points[3][0]), int(end_points[3][1])), (255, 0, 0), 2)
+    cv2.line(frame,
+             (int(end_points[0][0]), int(end_points[0][1])),
+             (int(end_points[1][0]), int(end_points[1][1])),
+             (255, 0, 0), 2)
+    cv2.line(frame,
+             (int(end_points[2][0]), int(end_points[2][1])),
+             (int(end_points[3][0]), int(end_points[3][1])),
+             (255, 0, 0), 2)

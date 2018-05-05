@@ -1,8 +1,8 @@
 import json
 import pickle
 from cv2 import VideoCapture
+from logging import basicConfig, getLogger, DEBUG, StreamHandler
 from os import listdir, path
-from pprint import pprint as print
 
 from numpy import array
 from numpy.random import randint
@@ -101,6 +101,13 @@ def run_coarse_experiment(average_distance, screen_diagonal, path_to_estimator,
 
 
 class Experiment:
+
+    basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                filename='log/{}.log'.format(__name__),
+                level=DEBUG)
+    logger = getLogger(__name__)
+    logger.addHandler(StreamHandler())
+
     def __init__(self, path_to_frames, path_to_face_points, path_to_face_poses, path_to_gazes, norm_camera='basler'):
         self.normalization_camera = Calibration(None)
 
@@ -110,6 +117,8 @@ class Experiment:
         self.path_to_gazes = path_to_gazes
         self.indices = [path.splitext(frame_index)[0] for frame_index in listdir(self.path_to_frames)]
         self.dataset_size = len(self.indices)
+
+        self.logger.info('Dataset size: ' + str(self.dataset_size))
 
         self.normalization_camera.camera_matrix = np.array(CAMERAS_PARAMETERS[norm_camera]['matrix'])
         self.normalization_camera.distortion_vector = np.array(CAMERAS_PARAMETERS[norm_camera]['distortion'])
@@ -164,12 +173,10 @@ class Experiment:
                 eyes = self.normalizer.fit_transform(frame, face_points, faces_rotations, gaze)
                 if eyes:
                     draw_eye_landmarks(self.normalizer, self.normalizer.frame, camera)
-                    cv2.imshow(__name__ + str(k), cv2.resize(self.normalizer.frame,
-                                                             (int(frame.shape[1]), int(frame.shape[0]))))
-                    cv2.imshow('kinect - left' + str(k), eyes[0][0])
-                    cv2.imshow('kinect - right' + str(k), eyes[0][1])
-            else:
-                print('Not full sample!')
+                    cv2.imshow(__name__ + str(k),
+                               cv2.resize(self.normalizer.frame, (int(frame.shape[1]/2), int(frame.shape[0]/2))))
+                    cv2.imshow('left' + str(k), eyes[0][0])
+                    cv2.imshow('right' + str(k), eyes[0][1])
         cv2.waitKey(0)
         return self
 
@@ -204,7 +211,7 @@ class Experiment:
         return self
 
 
-    def create_learning_dataset(self, filename):
+    def create_learning_dataset(self, filename, display=False):
         """
         Creates pickle file with learning dataset
         :param filename: name of file, where to save
@@ -213,11 +220,20 @@ class Experiment:
         learning_dataset = []
         for k, (frame, face_points, faces_rotations, gaze) in enumerate(self.generate_dataset(range(self.dataset_size))):
             if face_points is not None and faces_rotations is not None and gaze is not None:
-                self.normalizer.fit_transform(frame, face_points, faces_rotations, gaze)
+                eyes = self.normalizer.fit_transform(frame, face_points, faces_rotations, gaze)
                 learning_dataset.append(self.normalizer.faces)
+                self.logger.info(f'Sample#{k} saved')
+                if display:
+                    cv2.imshow('left' + str(k), eyes[0][0])
+                    cv2.imshow('right' + str(k), eyes[0][1])
+                    cv2.waitKey(1)
+                if k % 50 == 0:
+                    cv2.destroyAllWindows()
             else:
-                print(f'Not full sample #{k}!')
+                self.logger.warning(f'Not full sample #{k}!')
+
         pickle.dump(learning_dataset, file=open(filename, mode='wb'))
+        self.logger.info(f'{len(learning_dataset)}/{self.dataset_size} samples saved to {filename}')
         return self
 
     @staticmethod
@@ -229,7 +245,7 @@ class Experiment:
 if __name__ == '__main__':
 
     root_path = path.join(path.dirname(__file__), r'..\..\03_05_18__18-00\1525358247\DataSource')
-    camera = 'ir-camera'
+    camera = 'basler'
 
     path_to_frames = [root_path + r'\cam_2\InfraredFrame']
     # path_to_frames = [root_path + r'\cam_1\InfraredFrame']
@@ -244,13 +260,13 @@ if __name__ == '__main__':
                             path_to_gazes=path_to_gazes[0],
                             norm_camera=camera)
 
-    print('Dataset size: ' + str(experiment.dataset_size))
-
     # validating data on random samples
-    experiment.validate_camera_calibration([48], camera=camera)
-    experiment.validate_screen_calibration([48], camera=camera)
-    experiment.validate_Gazepoint_gaze([48], camera=camera)
-    # experiment.create_learning_dataset(root_path + r'\normalized_dataset.pickle')
+    experiment.validate_camera_calibration([1], camera=camera)
+    experiment.validate_screen_calibration([1], camera=camera)
+    experiment.validate_Gazepoint_gaze([1], camera=camera)
+    cv2.destroyAllWindows()
+
+    experiment.create_learning_dataset(root_path + r'\normalized_dataset.pickle', display=True)
 
 
 
