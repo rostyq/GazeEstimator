@@ -1,14 +1,20 @@
-from .normalisation import DlibImageNormalizer
-
-from .estimator import estimate_gaze
-from .estimator import init_model
-
-from .cv2window import ExperimentWindow
-from .cv2window import ispressed
-
+import json
+import pickle
 from cv2 import VideoCapture
+from os import listdir, path
+from pprint import pprint as print
+
 from numpy import array
 from numpy.random import randint
+
+from app.calibration import Calibration
+from app.cv2window import ExperimentWindow
+from app.cv2window import ispressed
+from app.estimator import estimate_gaze
+from app.estimator import init_model
+from app.normalisation import StandNormalizer, Face, DlibImageNormalizer
+from app.normalisation.utils import *
+from config import *
 
 
 def run_coarse_experiment(average_distance, screen_diagonal, path_to_estimator,
@@ -93,72 +99,110 @@ def run_coarse_experiment(average_distance, screen_diagonal, path_to_estimator,
     capture.release()
     window.close()
 
-import json
-import pickle
-from os import listdir
-from os import path
-
-import cv2
-
-from app.calibration import Calibration
-from app.normalisation import StandNormalizazer, Face
-from app.normalisation.utils import draw_eye_centers, POG_to_kinect_space
-from config import *
-
 
 class Experiment:
-    def __init__(self, path_to_frames, path_to_face_points, path_to_face_poses, norm_camera='basler'):
+    def __init__(self, path_to_frames, path_to_face_points, path_to_face_poses, path_to_gazes, norm_camera='basler'):
         self.normalization_camera = Calibration(None)
 
         self.path_to_frames = path_to_frames
-        self.frames = listdir(self.path_to_frames)
         self.path_to_face_points = path_to_face_points
-        self.face_points = listdir(self.path_to_face_points)
         self.path_to_face_poses = path_to_face_poses
-        self.face_poses = listdir(self.path_to_face_poses)
+        self.path_to_gazes = path_to_gazes
+        self.indices = [path.splitext(frame_index)[0] for frame_index in listdir(self.path_to_frames)]
+        self.dataset_size = len(self.indices)
 
-        self.normalization_camera.camera_matrix = cameras[norm_camera]['matrix']
-        self.normalization_camera.distortion_vector = cameras[norm_camera]['distortion']
-        self.normalization_camera.rotation_vector = cameras[norm_camera]['rotation_vector']
+        self.normalization_camera.camera_matrix = np.array(CAMERAS_PARAMETERS[norm_camera]['matrix'])
+        self.normalization_camera.distortion_vector = np.array(CAMERAS_PARAMETERS[norm_camera]['distortion'])
+        self.normalization_camera.rotation_vector = np.array(CAMERAS_PARAMETERS[norm_camera]['rotation_vector'])
 
-        self.dataset_size = min([len(self.frames), len(self.face_points), len(self.face_poses)])
-
-        frame_example = cv2.imread(path.join(self.path_to_frames, self.frames[0]))
-        self.normalizer = StandNormalizazer(frame_example.shape, calibration=self.normalization_camera,
-                                            rotation_vector=cameras[norm_camera]['rotation_vector'],
-                                            translation_vector=cameras[norm_camera]['translation_vector'])
+        frame_example = cv2.imread(path.join(self.path_to_frames, self.indices[0] + '.png'))
+        self.normalizer = StandNormalizer(frame_example.shape, calibration=self.normalization_camera,
+                                          rotation_vector=np.array(CAMERAS_PARAMETERS[norm_camera]['rotation_vector']),
+                                          translation_vector=np.array(CAMERAS_PARAMETERS[norm_camera]['translation_vector']))
 
     def generate_dataset(self, indices):
         """
         Dataset generator
-        :param indices: indices of samples
+        :param indices: indices of samples, according to BRS
         :return: yield tuple(frame, face_points, faces_rotations)
         """
         for current_sample in indices:
-            frame = cv2.imread(path.join(self.path_to_frames, self.frames[current_sample]))
-            with open(path.join(self.path_to_face_points, self.face_points[current_sample])) as face_points:
-                face_points = json.load(face_points)
-            with open(path.join(self.path_to_face_poses, self.face_poses[current_sample])) as face_poses:
-                face_poses = json.load(face_poses)
-                faces_rotations = [face_pose['FaceRotationQuaternion'] for face_pose in face_poses]
-            yield frame, face_points, faces_rotations
+            frame_file = path.join(self.path_to_frames, self.indices[current_sample] + '.png')
+            face_points_file = path.join(self.path_to_face_points, self.indices[current_sample] + '.txt')
+            face_poses_file = path.join(self.path_to_face_poses, self.indices[current_sample] + '.txt')
+            gazes_file = path.join(self.path_to_gazes, self.indices[current_sample] + '.txt')
 
-    def validate_calibration(self, frame_indices):
+            frame = None
+            face_points = None
+            faces_rotations = None
+            gaze = None
+
+            if path.isfile(frame_file):
+                frame = cv2.imread(frame_file)
+            if path.isfile(face_points_file):
+                with open(face_points_file) as face_points:
+                    face_points = json.load(face_points)
+            if path.isfile(face_poses_file):
+                with open(face_poses_file) as face_poses:
+                    face_poses = json.load(face_poses)
+                    faces_rotations = [face_pose['FaceRotationQuaternion'] for face_pose in face_poses]
+            if path.isfile(gazes_file):
+                with open(gazes_file) as gaze:
+                    gaze = json.load(gaze)
+                    if gaze['REC']['FPOGV'] or True:
+                        gaze = POG_to_kinect_space(gaze['REC']['FPOGX'], gaze['REC']['FPOGY'])
+            yield frame, face_points, faces_rotations, gaze
+
+    def validate_camera_calibration(self, frame_indices, camera='basler'):
         """
-        Performs validation by projection eye landmarks on frames. Shows all frames
+        Performs validation by projection of eye landmarks on frame. Shows all frames
         :param frame_indices: indices of frames to project landmarks on
         :return: self
         """
-        for k, (frame, face_points, faces_rotations) in enumerate(self.generate_dataset(frame_indices)):
-            eyes = self.normalizer.fit_transform(frame, face_points, faces_rotations)
-            if eyes:
-                draw_eye_centers(self.normalizer)
-                cv2.imshow(__name__ + str(k), cv2.resize(self.normalizer.frame,
-                                                         (int(frame.shape[1]/2), int(frame.shape[0]/2))))
-                cv2.imshow('kinect - left' + str(k), eyes[0][0])
-                cv2.imshow('kinect - right' + str(k), eyes[0][1])
+        for k, (frame, face_points, faces_rotations, gaze) in enumerate(self.generate_dataset(frame_indices)):
+            if face_points is not None and faces_rotations is not None:
+                eyes = self.normalizer.fit_transform(frame, face_points, faces_rotations, gaze)
+                if eyes:
+                    draw_eye_landmarks(self.normalizer, self.normalizer.frame, camera)
+                    cv2.imshow(__name__ + str(k), cv2.resize(self.normalizer.frame,
+                                                             (int(frame.shape[1]), int(frame.shape[0]))))
+                    cv2.imshow('kinect - left' + str(k), eyes[0][0])
+                    cv2.imshow('kinect - right' + str(k), eyes[0][1])
+            else:
+                print('Not full sample!')
         cv2.waitKey(0)
         return self
+
+    def validate_screen_calibration(self, frame_indices, camera='basler'):
+        """
+        Performs validation by projection of screen rectangle on frame. Shows all frames
+        :param frame_indices: indices of frames to project rectangle on
+        :return: self
+        """
+        for k, (frame, _, _, _) in enumerate(self.generate_dataset(frame_indices)):
+            draw_screen(frame, camera)
+            cv2.imshow(__name__ + str(k), cv2.resize(frame,
+                                                     (int(frame.shape[1]/2), int(frame.shape[0]/2))))
+        cv2.waitKey(0)
+        return self
+
+
+    def validate_Gazepoint_gaze(self, frame_indices, camera='basler'):
+        """
+        Performs validation by projection of gaze vector. Shows all frames
+        :param frame_indices: indices of frames to project gaze vector on
+        :return: self
+        """
+        for k, (frame, face_points, faces_rotations, gaze) in enumerate(self.generate_dataset(frame_indices)):
+            if face_points is not None and faces_rotations is not None:
+                eyes = self.normalizer.fit_transform(frame, face_points, faces_rotations, gaze)
+                if eyes:
+                    draw_real_gazes(self.normalizer, frame, camera)
+                    cv2.imshow(__name__ + str(k),
+                               cv2.resize(frame, (int(frame.shape[1]/2), int(frame.shape[0]/2))))
+        cv2.waitKey(0)
+        return self
+
 
     def create_learning_dataset(self, filename):
         """
@@ -167,48 +211,46 @@ class Experiment:
         :return: self
         """
         learning_dataset = []
-        for frame, face_points, faces_rotations in self.generate_dataset(range(self.dataset_size)):
-            self.normalizer.fit_transform(frame, face_points, faces_rotations)
-            #real_gaze_vector
-            learning_dataset.append(self.normalizer.faces)
+        for k, (frame, face_points, faces_rotations, gaze) in enumerate(self.generate_dataset(range(self.dataset_size))):
+            if face_points is not None and faces_rotations is not None and gaze is not None:
+                self.normalizer.fit_transform(frame, face_points, faces_rotations, gaze)
+                learning_dataset.append(self.normalizer.faces)
+            else:
+                print(f'Not full sample #{k}!')
         pickle.dump(learning_dataset, file=open(filename, mode='wb'))
         return self
 
+    @staticmethod
+    def load_learning_dataset(filename):
+        with open(filename, mode='rb') as dataset:
+            return pickle.load(dataset)
+
 
 if __name__ == '__main__':
-    # path_to_frames = [path.join(path.dirname(__file__),
-    #                              r'../../11_04_18/1523433382/DataSource/cam_0/ColorFrame'),
-    #                    path.join(path.dirname(__file__),
-    #                              r'../..\20_04_2018\20_04_18\1524238461\DataSource/cam_1/ColorFrame'),
-    #                    ]
-    # path_to_face_points = [path.join(path.dirname(__file__),
-    #                                   r'../../11_04_18/1523433382/DataSource/cam_0/FacePoints'),
-    #                         path.join(path.dirname(__file__),
-    #                                   r'../..\20_04_2018\20_04_18\1524238461/DataSource/cam_1/FacePoints'),
-    #                         ]
 
-    path_to_frames = [path.join(path.dirname(__file__),
-                                 r'../../11_04_18/1523433382/DataSource/cam_1/InfraredFrame'),
-                       path.join(path.dirname(__file__),
-                                 r'../../20_04_2018/20_04_18/1524238461/DataSource/cam_2/InfraredFrame')]
-    path_to_face_points = [path.join(path.dirname(__file__),
-                                      r'../../11_04_18/1523433382/DataSource/cam_0/FacePoints'),
-                            path.join(path.dirname(__file__),
-                                      r'../20_04_2018/20_04_18/1524238461/DataSource/cam_1/FacePoints')]
-    path_to_face_poses = [path.join(path.dirname(__file__),
-                                     r'../../11_04_18/1523433382/DataSource/cam_0/FaceFrame'),
-                           path.join(path.dirname(__file__),
-                                     r'../../20_04_2018/20_04_18/1524238461/DataSource/cam_1/FaceFrame')]
+    root_path = path.join(path.dirname(__file__), r'..\..\03_05_18__18-00\1525358247\DataSource')
+    camera = 'ir-camera'
+
+    path_to_frames = [root_path + r'\cam_2\InfraredFrame']
+    # path_to_frames = [root_path + r'\cam_1\InfraredFrame']
+    # path_to_frames = [root_path + r'\cam_1\ColorFrame']
+    path_to_face_points = [root_path + r'\cam_1\FacePoints']
+    path_to_face_poses = [root_path + r'\cam_1\FaceFrame']
+    path_to_gazes = [root_path + r'\cam_3\GazepointData']
 
     experiment = Experiment(path_to_frames=path_to_frames[0],
                             path_to_face_points=path_to_face_points[0],
-                            path_to_face_poses=path_to_face_poses[0])
+                            path_to_face_poses=path_to_face_poses[0],
+                            path_to_gazes=path_to_gazes[0],
+                            norm_camera=camera)
 
-    # validating camera calibration on random samples
-    experiment.validate_calibration([0, 100, 110])
-    experiment.create_learning_dataset('dataset.pickle')
+    print('Dataset size: ' + str(experiment.dataset_size))
 
-    pickle.load(open('dataset.pickle', mode='rb'))
+    # validating data on random samples
+    experiment.validate_camera_calibration([48], camera=camera)
+    experiment.validate_screen_calibration([48], camera=camera)
+    experiment.validate_Gazepoint_gaze([48], camera=camera)
+    # experiment.create_learning_dataset(root_path + r'\normalized_dataset.pickle')
 
 
 

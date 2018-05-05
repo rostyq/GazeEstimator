@@ -20,6 +20,8 @@ class Face:
         self.gaze = None
         self.left_eye_center = None
         self.right_eye_center = None
+        self.real_right_gaze = None
+        self.real_left_gaze = None
         self.norm_eye_frames = tuple()
 
 
@@ -39,10 +41,10 @@ class ImageNormalizer(BaseEstimator):
         if self.calibration is None:
             self._default_intrinsic_calibration()
 
-        focal_length = self.frame_size[0]
-        center = (self.frame_size[1] / 2, self.frame_size[0] / 2)
-        #self.calibration.camera_matrix[0, 2] = center[0]
-        #self.calibration.camera_matrix[1, 2] = center[1]
+        # focal_length = self.frame_size[0]
+        # center = (self.frame_size[1] / 2, self.frame_size[0] / 2)
+        # self.calibration.camera_matrix[0, 2] = center[0]
+        # self.calibration.camera_matrix[1, 2] = center[1]
 
         # Other settings
         self.eye_frame_size = 2
@@ -202,7 +204,7 @@ class DlibImageNormalizer(ImageNormalizer):
             return self._extract_normalized_eye_frames()
 
 
-class StandNormalizazer(ImageNormalizer):
+class StandNormalizer(ImageNormalizer):
     def __init__(self, frame_size, calibration, rotation_vector, translation_vector):
         super().__init__(frame_size, calibration)
         self.camera_rotation_vector = rotation_vector
@@ -226,23 +228,28 @@ class StandNormalizazer(ImageNormalizer):
                                                 [60.0, 36.0],
                                                 [0., 36.0]]) * self.eye_frame_size
 
-    def _set_faces(self, face_points_json, faces_quaternions):
+    def _set_faces(self, face_points_json, faces_quaternions, gaze_in_kinect_space):
         landmarks_kinect_space = np.array([list(face_points_json[i].values())\
-                                           for i in self.right_eye_rect + self.left_eye_rect]).T
+                                           for i in self.right_eye_rect + self.left_eye_rect]).T * np.array([[1], [-1], [1]])
+
         landmarks_eye_centers = np.array([list(face_points_json[i].values())\
-                                              for i in self.right_eye_center + self.left_eye_center]).T
-        rot_matr, _ = cv2.Rodrigues(self.camera_rotation_vector)
-        landmarks_camera_space = (rot_matr @ landmarks_kinect_space + self.camera_translation_vector) * \
-                                  np.array([[1], [-1], [1]])
-        landmarks_eye_centers_camera_space = (rot_matr @ landmarks_eye_centers + self.camera_translation_vector) * \
-                                              np.array([[1], [-1], [1]])
+                                              for i in self.right_eye_center + self.left_eye_center]).T * np.array([[1], [-1], [1]])
+
         # TODO landmars for all faces
         self.faces = [Face(None)]
         for i, face in enumerate(self.faces):
-            face.landmarks = landmarks_camera_space
+            face.landmarks = landmarks_kinect_space
             face.rvec = quaternion_to_angle_axis(faces_quaternions[i])
-            face.left_eye_center = landmarks_eye_centers_camera_space[:, 6:].sum(axis=1)/6
-            face.right_eye_center = landmarks_eye_centers_camera_space[:, :6].sum(axis=1)/6
+            face.left_eye_center = (landmarks_eye_centers[:, 6:].sum(axis=1)/6).reshape((3, 1))
+            face.right_eye_center = (landmarks_eye_centers[:, :6].sum(axis=1)/6).reshape((3, 1))
+
+        # setting real gaze vector for training dataset only for first face
+        if gaze_in_kinect_space is not None:
+            real_right_gaze = gaze_in_kinect_space - self.faces[0].right_eye_center
+            self.faces[0].real_right_gaze = real_right_gaze/np.linalg.norm(real_right_gaze)
+            real_left_gaze = gaze_in_kinect_space - self.faces[0].left_eye_center
+            self.faces[0].real_left_gaze = real_left_gaze/np.linalg.norm(real_left_gaze)
+
         return self
 
     def _extract_normalized_eye_frames(self, equalize=False):
@@ -253,10 +260,14 @@ class StandNormalizazer(ImageNormalizer):
 
         for face in self.faces:
             # 3D eye landmarks -> 2D eye landmarks on frame
-            end_points, _ = cv2.projectPoints(face.landmarks.T, np.zeros((3, 1)),
-                                              np.zeros((3, 1)), self.calibration.camera_matrix, self.calibration.distortion_vector)
+            end_points, _ = cv2.projectPoints(face.landmarks.T,
+                                              self.camera_rotation_vector,
+                                              self.camera_translation_vector,
+                                              self.calibration.camera_matrix,
+                                              self.calibration.distortion_vector)
             end_points = end_points.reshape((8, 2))
 
+            # TODO remove duplication
             # left eye homography
             homography, status = cv2.findHomography(end_points[4:], self.left_norm_image_plane)
             left_eye_frame = cv2.warpPerspective(self.frame, homography, (60 * self.eye_frame_size, 36 * self.eye_frame_size))
@@ -272,13 +283,11 @@ class StandNormalizazer(ImageNormalizer):
                 left_eye_frame, right_eye_frame = cv2.equalizeHist(left_eye_frame), cv2.equalizeHist(right_eye_frame)
             face.norm_eye_frames = (left_eye_frame, right_eye_frame)
 
-            for end_point in end_points:
-                 _ = cv2.circle(self.frame, (int(end_point[0]), int(end_point[1])), 5, (255, 0, 0), -1)
 
         return [face.norm_eye_frames for face in self.faces]
 
-    def fit(self, face_points_json, faces_quaternions):
-        self._set_faces(face_points_json, faces_quaternions)
+    def fit(self, face_points_json, faces_quaternions, gaze_in_kinect_space=None):
+        self._set_faces(face_points_json, faces_quaternions, gaze_in_kinect_space)
         return self
 
     def transform(self, image):
@@ -286,6 +295,6 @@ class StandNormalizazer(ImageNormalizer):
         if len(self.faces):
             return self._extract_normalized_eye_frames()
 
-    def fit_transform(self, image, face_points_json, faces_quaternions):
-        self.fit(face_points_json, faces_quaternions)
+    def fit_transform(self, image, face_points_json, faces_quaternions, gaze_in_kinect_space=None):
+        self.fit(face_points_json, faces_quaternions, gaze_in_kinect_space)
         return self.transform(image)

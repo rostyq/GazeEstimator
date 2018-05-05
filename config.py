@@ -1,4 +1,3 @@
-import numpy as np
 
 # path to gaze estimator model
 PATH_TO_ESTIMATOR = './app/bin/estimator.h5'
@@ -12,19 +11,31 @@ DEFAULT_AVERAGE_DISTANCE = 12
 # screen parameters
 screen_diagonal = 13.3
 
-cameras = {
-    'colored_camera': {'matrix': np.array([[1.0487, 0., 0.9607],
-                                           [0., 1.0505, 0.5409],
-                                           [0., 0., 0.001]]) * 1.0e+03,
-                       'distortion': np.zeros(4),
-                       'rotation_vector': np.zeros((3, 1)),
-                       'translation_vector': np.array([[0.0322945], [-0.0007767], [-0.0331078]])},
+CAMERAS_PARAMETERS = {
+    'colored_camera': {'matrix': [[1051.7, 0.,     957.6],
+                                  [0.,     1051.7, 537.6],
+                                  [0.,     0.,     1.   ]],
+                       'distortion': [-0.0026, 0.1780, 0.0011, 0.0003],
+                       'rotation_vector': [[0.00012], [-0.00052], [0.00035]],
+                       'translation_vector': [[0.0517095], [0.0012225], [0.0013196]]},
 
-    'basler': {'matrix': np.array([[2.6155, -0.0035, 0.6576],
-                                   [0., 2.6178, 0.4682],
-                                   [0., 0., 0.001]]) * 1.0e+03,
-               'distortion': np.array([-0.5195, 0.3594, -0.0022, -0.0004]),
-               'rotation_vector': np.array([[-0.075], [0.005], [0.]]),
-               'translation_vector': np.array([[0.137], [0.044], [0.]])}
+    'basler': {'matrix': [[1896.6, 0.,     654.8],
+                          [0.,     1897.9, 461.5],
+                          [0.,     0.,     1.   ]],
+               'distortion': [-0.6819, 0.3729, -0.0021, -0.0005],
+               'rotation_vector': [[0.0497], [0.0409], [0.0621]],
+               'translation_vector': [[0.1359533], [0.0489501], [0.0100126]]},
+
+    'ir-camera': {'matrix': [[363.6643, 0.,       257.1285],
+                             [0.,       363.7357, 208.6171],
+                             [0.,       0.,       1.]],
+                  'distortion': [0.1014, -0.2622, 0.0017, -0.0019],
+                  'rotation_vector': [[0.], [0.], [0.]],
+                  'translation_vector': [[0.], [0.], [0.]]}
 }
+
+SCREEN_PARAMETERS = {'screen_size': (1920, 1080),
+                     'diagonal_in_meters': 23 * 0.0254,  # 23 inches in meters
+                     'rotation_vector': [[0.3, -0.14, -0.04]],
+                     'translation_vector': [[0.38], [-0.1], [-0.75]]}
 
