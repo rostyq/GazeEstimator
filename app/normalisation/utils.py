@@ -44,6 +44,20 @@ def POG_to_kinect_space(POGX, POGY):
     return rot_matr @ POG_in_meters - np.array(SCREEN_PARAMETERS['translation_vector'])
 
 
+def kinect_space_to_camera_space(vector, camera='basler'):
+    rot_matr, _ = cv2.Rodrigues(np.array(CAMERAS_PARAMETERS[camera]['rotation_vector']))
+    return rot_matr @ vector + CAMERAS_PARAMETERS[camera]['translation_vector']
+
+
+def camera_space_to_kinect_space(vector, camera='basler'):
+    rot_matr, _ = cv2.Rodrigues(np.array(CAMERAS_PARAMETERS[camera]['rotation_vector']))
+    return np.linalg.inv(rot_matr) @ (vector - CAMERAS_PARAMETERS[camera]['translation_vector'])
+
+
+def normalize(vector):
+    return vector/np.linalg.norm(vector)
+
+
 def draw_faces_rectangles(dlib_normalizer, frame):
     """
     Draws all faces rectangle and numbers all rectangles. Works only for normalization camera
