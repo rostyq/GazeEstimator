@@ -1,8 +1,8 @@
 import json
-import pickle
 from cv2 import VideoCapture
 from logging import basicConfig, getLogger, DEBUG, StreamHandler
 from os import listdir, path
+import os
 
 from numpy import array
 from numpy.random import randint
@@ -74,6 +74,7 @@ def run_coarse_experiment(average_distance, screen_diagonal, path_to_estimator,
 
         try:
             left_eye_img = face_recognitor.fit_transform(capture.read()[1])[0][1]
+            print(left_eye_img.shape)
             left_gaze_vector = estimate_gaze(left_eye_img,
                                              dummy_head_pose,
                                              gaze_estimator)
@@ -158,8 +159,10 @@ class Experiment:
             if path.isfile(gazes_file):
                 with open(gazes_file) as gaze:
                     gaze = json.load(gaze)
-                    if gaze['REC']['FPOGV'] or True:
+                    if int(gaze['REC']['FPOGV']) or True:
                         gaze = POG_to_kinect_space(gaze['REC']['FPOGX'], gaze['REC']['FPOGY'])
+                    else:
+                        gaze = None
             yield frame, face_points, faces_rotations, gaze
 
     def validate_camera_calibration(self, frame_indices, camera='basler'):
@@ -211,35 +214,54 @@ class Experiment:
         return self
 
 
-    def create_learning_dataset(self, filename, display=False):
+    def create_learning_dataset(self, path, display=False):
         """
         Creates pickle file with learning dataset
-        :param filename: name of file, where to save
+        :param path: name of file, where to save
         :return: self
         """
         learning_dataset = []
+        if not os.path.exists(path + '/normalized_data'):
+            os.mkdir(path + '/normalized_data')
+
         for k, (frame, face_points, faces_rotations, gaze) in enumerate(self.generate_dataset(range(self.dataset_size))):
             if face_points is not None and faces_rotations is not None and gaze is not None:
                 eyes = self.normalizer.fit_transform(frame, face_points, faces_rotations, gaze)
-                learning_dataset.append(self.normalizer.faces)
-                self.logger.info(f'Sample#{k} saved')
+
                 if display:
                     cv2.imshow('left' + str(k), eyes[0][0])
                     cv2.imshow('right' + str(k), eyes[0][1])
                     cv2.waitKey(1)
                 if k % 50 == 0:
                     cv2.destroyAllWindows()
-            else:
-                self.logger.warning(f'Not full sample #{k}!')
 
-        pickle.dump(learning_dataset, file=open(filename, mode='wb'))
-        self.logger.info(f'{len(learning_dataset)}/{self.dataset_size} samples saved to {filename}')
-        return self
+                learning_dataset.append({'faces': [face.__dict__() for face in self.normalizer.faces],
+                                         'frames': [f'{k}_left.png', f'{k}_right.png']})
+                cv2.imwrite(path + f'/normalized_data/{k}_left.png', eyes[0][0])
+                cv2.imwrite(path + f'/normalized_data/{k}_right.png', eyes[0][1])
+                self.logger.info(f'Sample#{k} saved')
+
+            else:
+                absent_data = 'face_points, ' if face_points is None else '' +\
+                              'faces_rotations, ' if faces_rotations is None else '' +\
+                              'gaze, ' if gaze is None else ''
+                self.logger.warning(f'Not full sample #{k}! Missing {absent_data}')
+
+        self.dump_dataset(path+'/normalized_data/normalized_dataset.json', learning_dataset, camera)
+        self.logger.info(f'{len(learning_dataset)}/{self.dataset_size} samples saved to {path}')
+        return path+'/normalized_data/normalized_dataset.json'
+
+    @staticmethod
+    def dump_dataset(filename, dataset, camera='basler'):
+        with open(filename, mode='w') as outfile:
+            json.dump({'dataset': dataset,
+                       'camera': CAMERAS_PARAMETERS[camera]},
+                      fp=outfile, indent=2)
 
     @staticmethod
     def load_learning_dataset(filename):
         with open(filename, mode='rb') as dataset:
-            return pickle.load(dataset)
+            return json.load(dataset)
 
 
 if __name__ == '__main__':
@@ -266,7 +288,8 @@ if __name__ == '__main__':
     experiment.validate_Gazepoint_gaze([1], camera=camera)
     cv2.destroyAllWindows()
 
-    experiment.create_learning_dataset(root_path + r'\normalized_dataset.pickle', display=True)
+    dataset = experiment.create_learning_dataset(root_path, display=True)
+    print(Experiment.load_learning_dataset(dataset))
 
 
 

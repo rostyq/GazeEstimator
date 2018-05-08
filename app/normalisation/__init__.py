@@ -1,4 +1,5 @@
 from os import path
+import json
 
 import cv2
 import dlib
@@ -8,21 +9,37 @@ from scipy.io import loadmat
 from sklearn.base import BaseEstimator
 
 from app.calibration import Calibration
-from app.normalisation.utils import quaternion_to_angle_axis
+from app.normalisation.utils import *
 
 
 class Face:
     def __init__(self, rect):
-        self.landmarks = []
+        self.landmarks = None
         self.rect = rect
-        self.rvec = None
-        self.tvec = None
+        self.rotation_vector = None
+        self.translation_vector = None
         self.gaze = None
         self.left_eye_center = None
         self.right_eye_center = None
-        self.real_right_gaze = None
         self.real_left_gaze = None
-        self.norm_eye_frames = tuple()
+        self.real_right_gaze = None
+        self.real_left_gaze_norm_camera = None
+        self.real_right_gaze_norm_camera = None
+        self.norm_eye_left_frame = None
+        self.norm_eye_right_frame = None
+
+    def __dict__(self):
+        return {'eye_landmarks': self.landmarks.tolist(),
+                'rotation_vector': self.rotation_vector.tolist(),
+                'translation_vector': self.translation_vector.tolist() if self.translation_vector is not None else None,
+                'left_eye_center': self.left_eye_center.tolist(),
+                'right_eye_center': self.right_eye_center.tolist(),
+                'real_left_gaze': self.real_left_gaze.tolist(),
+                'real_right_gaze': self.real_right_gaze.tolist(),
+                'real_left_gaze_norm_camera': self.real_left_gaze_norm_camera.tolist(),
+                'real_right_gaze_norm_camera': self.real_right_gaze_norm_camera.tolist()
+            }
+
 
 # TODO Transfer all constants to config.py
 
@@ -48,7 +65,7 @@ class ImageNormalizer(BaseEstimator):
         # self.calibration.camera_matrix[1, 2] = center[1]
 
         # Other settings
-        self.eye_frame_size = 2
+        self.eye_frame_size = 1
         np.set_printoptions(precision=2)
 
     def _default_intrinsic_calibration(self):
@@ -123,8 +140,8 @@ class DlibImageNormalizer(ImageNormalizer):
                                                                           self.calibration.camera_matrix,
                                                                           self.calibration.distortion_vector,
                                                                           flags=cv2.SOLVEPNP_ITERATIVE)
-            self.faces[i].rvec = rotation_vector
-            self.faces[i].tvec = translation_vector
+            self.faces[i].rotation_vector = rotation_vector
+            self.faces[i].translation_vector = translation_vector
         return self
 
     def _extract_eye_landmarks(self):
@@ -172,8 +189,8 @@ class DlibImageNormalizer(ImageNormalizer):
 
         for face in self.faces:
             # Drawing plane in front of face on frame
-            four_points_plane_proj, _ = cv2.projectPoints(four_points_plane, face.rvec,
-                                                          face.tvec, self.calibration.camera_matrix,
+            four_points_plane_proj, _ = cv2.projectPoints(four_points_plane, face.rotation_vector,
+                                                          face.translation_vector, self.calibration.camera_matrix,
                                                           self.calibration.distortion_vector)
 
             # Calculate Homography
@@ -192,9 +209,9 @@ class DlibImageNormalizer(ImageNormalizer):
                 right_eye_frame, cv2.COLOR_BGR2GRAY)
             if equalize:
                 left_eye_frame, right_eye_frame = cv2.equalizeHist(left_eye_frame), cv2.equalizeHist(right_eye_frame)
-            face.norm_eye_frames = (left_eye_frame, right_eye_frame)
+            face.norm_eye_left_frame, face.norm_eye_right_frame = left_eye_frame, right_eye_frame
 
-        return [face.norm_eye_frames for face in self.faces]
+        return [(face.norm_eye_left_frame, face.norm_eye_right_frame) for face in self.faces]
 
     def fit_transform(self, image):
         self._set_frame(image)
@@ -229,7 +246,7 @@ class StandNormalizer(ImageNormalizer):
                                                 [60.0, 36.0],
                                                 [0., 36.0]]) * self.eye_frame_size
 
-    def _set_faces(self, face_points_json, faces_quaternions, gaze_in_kinect_space):
+    def _set_faces(self, face_points_json, faces_quaternions, gaze_point_in_kinect_space):
         landmarks_kinect_space = np.array([list(face_points_json[i].values())\
                                            for i in self.right_eye_rect + self.left_eye_rect]).T * np.array([[1], [-1], [1]])
 
@@ -240,16 +257,19 @@ class StandNormalizer(ImageNormalizer):
         self.faces = [Face(None)]
         for i, face in enumerate(self.faces):
             face.landmarks = landmarks_kinect_space
-            face.rvec = quaternion_to_angle_axis(faces_quaternions[i])
+            face.rotation_vector = quaternion_to_angle_axis(faces_quaternions[i])
             face.left_eye_center = (landmarks_eye_centers[:, 6:].sum(axis=1)/6).reshape((3, 1))
             face.right_eye_center = (landmarks_eye_centers[:, :6].sum(axis=1)/6).reshape((3, 1))
 
         # setting real gaze vector for training dataset only for first face
-        if gaze_in_kinect_space is not None:
-            real_right_gaze = gaze_in_kinect_space - self.faces[0].right_eye_center
-            self.faces[0].real_right_gaze = real_right_gaze/np.linalg.norm(real_right_gaze)
-            real_left_gaze = gaze_in_kinect_space - self.faces[0].left_eye_center
-            self.faces[0].real_left_gaze = real_left_gaze/np.linalg.norm(real_left_gaze)
+        if gaze_point_in_kinect_space is not None:
+            # gaze vectors in kinect space
+            self.faces[0].real_right_gaze = normalize(gaze_point_in_kinect_space - self.faces[0].right_eye_center)
+            self.faces[0].real_left_gaze = normalize(gaze_point_in_kinect_space - self.faces[0].left_eye_center)
+
+            # gaze vectors in norm camera space
+            self.faces[0].real_left_gaze_norm_camera = normalize(kinect_space_to_camera_space(self.faces[0].real_left_gaze))
+            self.faces[0].real_right_gaze_norm_camera = normalize(kinect_space_to_camera_space(self.faces[0].real_right_gaze))
 
         return self
 
@@ -282,10 +302,9 @@ class StandNormalizer(ImageNormalizer):
                                               cv2.cvtColor(right_eye_frame, cv2.COLOR_BGR2GRAY)
             if equalize:
                 left_eye_frame, right_eye_frame = cv2.equalizeHist(left_eye_frame), cv2.equalizeHist(right_eye_frame)
-            face.norm_eye_frames = (left_eye_frame, right_eye_frame)
+            face.norm_eye_left_frame, face.norm_eye_right_frame = left_eye_frame, right_eye_frame
 
-
-        return [face.norm_eye_frames for face in self.faces]
+        return [(face.norm_eye_left_frame, face.norm_eye_right_frame) for face in self.faces]
 
     def fit(self, face_points_json, faces_quaternions, gaze_in_kinect_space=None):
         self._set_faces(face_points_json, faces_quaternions, gaze_in_kinect_space)
