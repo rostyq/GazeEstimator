@@ -1,10 +1,11 @@
-from time import strftime
-from os import path, listdir, getcwd
-from yaml import dump, load
 from logging import basicConfig, getLogger, DEBUG
-import numpy as np
+from os import path, listdir
+from time import strftime
+
 import cv2
+import numpy as np
 from PIL import Image
+from yaml import dump, load
 
 basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             filename='log/{}.log'.format(__name__),
@@ -14,7 +15,7 @@ logger = getLogger(__name__)
 class Calibration:
 
     def __init__(self, board_shape, path_to_dataset = None):
-        self.path = path_to_dataset if path_to_dataset is not None else path.join(getcwd(), 'calibration/dataset')
+        self.path = path_to_dataset if path_to_dataset is not None else path.join(path.dirname(__file__), 'dataset')
         self.metadata = path.join(self.path, '{}.yaml'.format(__name__))
         self.object_points = list()
         self.frame_points = list()
@@ -58,7 +59,7 @@ class Calibration:
         dataset_path = self.path if not dataset_path else dataset_path
         for filename in listdir(dataset_path):
             frame = path.join(dataset_path, filename)
-            if path.isfile(frame) and (frame.endswith('.png') or frame.endswith('.jpg')):
+            if path.isfile(frame) and (frame.endswith('.png') or frame.endswith('.jpg') or frame.endswith('.bmp')):
                 self.frame = cv2.imread(frame)
                 self.retrieval, corners = self.find_corners()
                 if self.retrieval:
@@ -67,15 +68,15 @@ class Calibration:
                     self.frame_points.append(self.corners_subpixel(corners))
 
     def calibrate_camera(self):
-        self.retrieval, self.matrix, self.distortion, self.rotation, \
+        self.retrieval, self.camera_matrix, self.distortion_vector, self.rotation, \
         self.translation = cv2.calibrateCamera(self.object_points,
                                            self.frame_points,
                                            self.frame_to_grey().shape[::-1],
                                            None, None)
 
     def dump_metadata(self):
-        metadata = {'camera_matrix':np.asarray(self.matrix).tolist(),
-                    'distortion_coefficient':np.asarray(self.distortion).tolist(),
+        metadata = {'camera_matrix':np.asarray(self.camera_matrix).tolist(),
+                    'distortion_coefficient':np.asarray(self.distortion_vector).tolist(),
                     'rotation_vector':np.asarray(self.rotation).tolist(),
                     'translation_vector':np.asarray(self.translation).tolist()}
         with open(self.metadata, 'w') as _file:
@@ -84,14 +85,14 @@ class Calibration:
     def load_metadata(self):
         with open(self.metadata) as _file:
             metadata = load(_file)
-        self.matrix = np.array(metadata.get('camera_matrix'))
-        self.distortion = np.array(metadata.get('distortion_coefficient'))
+        self.camera_matrix = np.array(metadata.get('camera_matrix'))
+        self.distortion_vector = np.array(metadata.get('distortion_coefficient'))
         self.rotation = [np.array(vector) for vector in metadata.get('rotation_vector')]
         self.translation = [np.array(vector) for vector in metadata.get('translation_vector')]
 
     def metadata_logger(self):
-        logger.info('Camera Matrix: {}'.format(self.matrix))
-        logger.info('Distortion factor: {}'.format(self.distortion))
+        logger.info('Camera Matrix: {}'.format(self.camera_matrix))
+        logger.info('Distortion factor: {}'.format(self.distortion_vector))
         logger.info('Rotation vectors: {}'.format(self.rotation))
         logger.info('Translation vectors: {}'.format(self.translation))
 

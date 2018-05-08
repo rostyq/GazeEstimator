@@ -5,16 +5,6 @@ import numpy as np
 def ispressed(button, delay=1):
     return True if cv2.waitKey(delay) == button else False
 
-def create_random_coordinates(screen_resolution):
-    return np.random.randint(0, screen_resolution[0], size=1), np.random.randint(0, screen_resolution[1], size=1)
-
-def calc_pog_coordinates(distance, gaze_vector, screen_resolution, screen_inches):
-    return tuple(map(
-        int, [
-            ((distance * gaze_vector[0] / gaze_vector[2]) / (0.5 * screen_inches[0]) + 1) * (0.5*screen_resolution[0]),
-            (distance * gaze_vector[1] / (-gaze_vector[2])) / screen_inches[1] * screen_resolution[1]
-            ]))
-
 def get_screen_resolution():
     from tkinter import Tk
     root = Tk()
@@ -34,37 +24,6 @@ def read_grayscale_image(path_to_image):
 
 def resize_image(*args, **kwargs):
     return cv2.resize(*args, **kwargs)
-
-
-dummy_head_pose = np.array([0, 0, 0])
-
-
-class Ticker:
-
-    def __init__(self, threshold):
-        self.threshold = threshold
-        self.tick = 0
-
-    def __call__(self):
-        if self.tick < self.threshold:
-            self.tick += 1
-            return False
-        else:
-            self.tick = 0
-            return True
-
-
-class Capture:
-
-    def __init__(self, target):
-        self.capture = cv2.VideoCapture(target)
-        self.frame_shape = self.get_frame().shape
-
-    def get_frame(self):
-        return self.capture.read()[1]
-
-    def release(self):
-        self.capture.release()
 
 
 class ExperimentWindow:
