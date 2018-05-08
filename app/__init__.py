@@ -1,5 +1,18 @@
 def show_charuco(path_to_image, screen_diagonal, square_length_cm, shift):
+    """
+    This function shows charuco board on screen.
 
+    Parameters:
+    -----------
+    path_to_image: Path to image with CHARUCO board in .png format.
+    screen_diagonal: Screen diagonal in inches.
+    square_length_cm: Length of charuco-square in cm.
+    shift tuple(int, int): Shift of charuco from left-upper corner of the screen.
+
+    Returns:
+    --------
+    None
+    """
     from .cv2window import ExperimentWindow
     from .cv2window import ispressed
     from .cv2window import read_grayscale_image
