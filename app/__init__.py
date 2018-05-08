@@ -1,21 +1,73 @@
 import json
 import pickle
+
 from cv2 import VideoCapture
-from logging import basicConfig, getLogger, DEBUG, StreamHandler
+from cv2 import imread
+from cv2 import resize
+from cv2 import imshow
+
+from logging import basicConfig
+from logging import getLogger
+from logging import DEBUG
+from logging import StreamHandler
+
 from os import listdir, path
 
 from numpy import array
+from numpy import full
+from numpy import uint8
 from numpy.random import randint
 
 from app.calibration import Calibration
+
 from app.cv2window import ExperimentWindow
 from app.cv2window import ispressed
+
 from app.estimator import estimate_gaze
 from app.estimator import init_model
-from app.normalisation import StandNormalizer, Face, DlibImageNormalizer
+
+from app.normalisation import StandNormalizer
+from app.normalisation import Face
+from app.normalisation import DlibImageNormalizer
 from app.normalisation.utils import *
 from config import *
 
+
+def show_charuco(path_to_image, screen_diagonal, square_length_cm, shift):
+    """
+    This function shows charuco board on the screen.
+
+    Parameters:
+    -----------
+    path_to_image: Path to image with CHARUCO board in .png format.
+    screen_diagonal: Screen diagonal in inches.
+    square_length_cm: Length of charuco-square in cm.
+    shift tuple(int, int): Shift of charuco from left-upper corner of the screen.
+
+    Returns:
+    --------
+    None
+    """
+    charuco_window = ExperimentWindow('CHARUCO', screen_diagonal)
+    charuco_image = imread(path_to_image, 0)
+
+    y, x = charuco_image.shape
+    square_length = y // 4
+    square_length_inch = square_length_cm * 0.3937007874
+    dpi = charuco_window.screen_resolution[0] / charuco_window.screen_inches[0]
+    ynew = int(y*square_length_inch*dpi/square_length)
+    xnew = int(ynew*(x/y))
+
+    charuco_image = resize(charuco_image, (xnew, ynew))
+    new_charuco = full(charuco_window.screen_resolution[::-1], 255, dtype=uint8)
+
+    new_charuco[shift[0]:charuco_image.shape[0]+shift[0], shift[1]:charuco_image.shape[1]+shift[1]] = charuco_image
+    charuco_window.background = new_charuco
+
+    charuco_window.open()
+    while not ispressed(27):
+        charuco_window.show()
+    charuco_window.close()
 
 def run_coarse_experiment(average_distance, screen_diagonal, path_to_estimator,
                           capture_target=0, test_ticks_treshold=10, button_code_to_stop=27):
@@ -30,11 +82,6 @@ def run_coarse_experiment(average_distance, screen_diagonal, path_to_estimator,
     capture_target: Parameters passed to opencv capture function. Default: 0 -- usually webcam.
     test_ticks_treshold: Every n-th tick change test circle. Default 10.
     button_code_to_stop: Code of button on keyboard which will stop the experiment. Default 27 -- ESCAPE.
-
-    Returns:
-    --------
-    None
-
     """
 
     # helping functions
@@ -267,7 +314,3 @@ if __name__ == '__main__':
     cv2.destroyAllWindows()
 
     experiment.create_learning_dataset(root_path + r'\normalized_dataset.pickle', display=True)
-
-
-
-
