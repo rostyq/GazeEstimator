@@ -1,14 +1,29 @@
-from keras.layers import Input, Dense, Concatenate, Flatten, Dropout, Lambda
+from keras.layers import Input
+from keras.layers import Dense
+from keras.layers import Concatenate
+from keras.layers import Flatten
+from keras.layers import Dropout
+from keras.layers import Lambda
 from keras.layers.convolutional import Conv2D
 from keras.layers.pooling import MaxPool2D
-from keras.initializers import RandomNormal, glorot_normal, glorot_uniform
+
+from keras.initializers import RandomNormal
+from keras.initializers import glorot_normal
+from keras.initializers import glorot_uniform
+
 from keras.regularizers import l2
-from keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, TerminateOnNaN
-from keras.optimizers import SGD, Adam
+
+from keras.callbacks import TensorBoard
+from keras.callbacks import ModelCheckpoint
+from keras.callbacks import ReduceLROnPlateau
+from keras.callbacks import TerminateOnNaN
+
+from keras.optimizers import SGD
 from keras.models import Model
-from numpy import pi
-import tensorflow as tf
 from keras import backend as K
+from numpy import pi
+
+import tensorflow as tf
 from tensorflow.python import debug as tf_debug
 
 debug = False
@@ -37,7 +52,6 @@ def calc_angle(angles1, angles2):
 
 def angle_accuracy(target, predicted):
     return tf.reduce_mean(calc_angle(predicted, target), name='mean_angle')
-
 
 def create_model(learning_rate=1e-2, seed=None):
 
