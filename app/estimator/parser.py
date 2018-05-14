@@ -22,6 +22,20 @@ class DatasetParser:
     """
     Parser for output data from Normalisation module.
 
+    Parameters
+    ----------
+    images : str
+        String with formatter keys `{index}` and {'eye'} that identify path to images data in json.
+        Must be like `dataset/{index}/0/eyes/{eye}/`.
+
+    gazes : str
+        String with formatter keys `{index}` and {'eye'} that identify path to gazes data in json.
+        Must be like `dataset/{index}/0/eyes/{eye}/`.
+
+    poses : str
+        String with formatter key `{index}` that identify path to poses vectors data in json.
+        Must be like `dataset/{index}/0/`.
+
     Examples
     --------
 
@@ -37,10 +51,10 @@ class DatasetParser:
     ...     parser.fit(file, DATASET_PATH)
 
     >>> # get array with gazes vectors
-    >>> gazes = list(parser.get_gazes_array('left'))
+    >>> gazes = parser.get_gazes_array('left')
 
     >>> # get array with poses vectors
-    >>> poses = list(parser.get_poses_array())
+    >>> poses = parser.get_poses_array()
 
     >>> # get sample numbers 3 and 4 images of left eyes
     >>> images = list(parser.get_images_array('left', indices=[3, 4]))
@@ -50,19 +64,7 @@ class DatasetParser:
 
     def __init__(self, images, gazes, poses):
         """
-        Parameters
-        ----------
-        images : str
-            String with formatter keys `{index}` and {'eye'} that identify path to images data in json.
-            Must be like `dataset/{index}/0/eyes/{eye}/`.
 
-        gazes : str
-            String with formatter keys `{index}` and {'eye'} that identify path to gazes data in json.
-            Must be like `dataset/{index}/0/eyes/{eye}/`.
-
-        poses : str
-            String with formatter key `{index}` that identify path to poses vectors data in json.
-            Must be like `dataset/{index}/0/`.
         """
         if any([(not frmt in check) for frmt, check in zip(self.__TEST,
                                                            [''.join([images, gazes]), poses])]):

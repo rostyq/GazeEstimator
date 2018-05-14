@@ -22,14 +22,27 @@ from app.calibration import Calibration
 from app.cv2window import ExperimentWindow
 from app.cv2window import ispressed
 
-from app.estimator import estimate_gaze
-from app.estimator import init_model
+from app.estimator import GazeNet
 
 from app.normalisation import StandNormalizer
 from app.normalisation import Face
 from app.normalisation import DlibImageNormalizer
 from app.normalisation.utils import *
 from config import *
+
+
+def train_gaze_net(path_to_dataset, faces_path, eyes_path, json_name, path_to_save, create_new, eye, epochs, batch_size):
+
+    parser_params = dict(images=eyes_path+'image', gazes=eyes_path+'gaze', poses=faces_path+'rotation')
+    gaze_estimator = GazeNet()
+    gaze_estimator.train(path_to_dataset=path_to_dataset,
+                         path_to_save=path_to_save,
+                         json_name=json_name,
+                         parser_params=parser_params,
+                         create_new=create_new,
+                         eye=eye,
+                         epochs=epochs,
+                         batch_size=batch_size)
 
 
 def show_charuco(path_to_image, screen_diagonal, square_length_cm, shift):
@@ -97,7 +110,7 @@ def run_coarse_experiment(average_distance, screen_diagonal, path_to_estimator,
     # prepare working objects
     capture = VideoCapture(capture_target)
     window = ExperimentWindow(__name__, screen_diagonal)
-    gaze_estimator = init_model(path_to_estimator)
+    gaze_estimator = GazeNet().init(path_to_estimator)
     face_recognitor = DlibImageNormalizer(capture.read()[1].shape)
 
     # prepare experiment window
@@ -121,9 +134,7 @@ def run_coarse_experiment(average_distance, screen_diagonal, path_to_estimator,
         try:
             left_eye_img = face_recognitor.fit_transform(capture.read()[1])[0][1]
             print(left_eye_img.shape)
-            left_gaze_vector = estimate_gaze(left_eye_img,
-                                             dummy_head_pose,
-                                             gaze_estimator)
+            left_gaze_vector = gaze_estimator.estimate_gaze(left_eye_img, dummy_head_pose)
             pog_coordinates = calc_pog_coordinates(average_distance,
                                                    left_gaze_vector,
                                                    window.screen_resolution,

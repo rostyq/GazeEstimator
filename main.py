@@ -1,6 +1,7 @@
-from app import run_coarse_experiment
-from app import show_charuco
 from config import *
+from app import train_gaze_net
+# from app import run_coarse_experiment
+# from app import show_charuco
 
 if __name__ == '__main__':
     # TODO what should I do here?
@@ -16,3 +17,14 @@ if __name__ == '__main__':
 
     # TODO example 2
     # show_charuco('./charuco_board.png', 13.3, 4.0, (50, 100))
+    faces_path = 'dataset/{index}/0/'
+    eyes_path = faces_path+'eyes/{eye}/'
+    train_gaze_net(path_to_dataset=path_to_dataset,
+                   faces_path=faces_path,
+                   eyes_path=eyes_path,
+                   json_name=json_name,
+                   path_to_save=path_to_save,
+                   create_new=True,
+                   eye='left',
+                   epochs=10,
+                   batch_size=64)

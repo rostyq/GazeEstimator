@@ -53,6 +53,7 @@ def calc_angle(angles1, angles2):
 def angle_accuracy(target, predicted):
     return tf.reduce_mean(calc_angle(predicted, target), name='mean_angle')
 
+
 def create_model(learning_rate=1e-2, seed=None):
 
     # input
@@ -155,11 +156,11 @@ def create_callbacks():
         patience=4,
         verbose=1
         )
-    earlystop = EarlyStopping(
-        monitor='val_loss',
-        min_delta=1e-5,
-        patience=20,
-        verbose=1)
+    # earlystop = EarlyStopping(
+    #     monitor='val_loss',
+    #     min_delta=1e-5,
+    #     patience=20,
+    #     verbose=1)
     terminate = TerminateOnNaN()
 
     return [tbCallBack, checkpoint, terminate]

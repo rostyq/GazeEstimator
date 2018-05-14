@@ -2,6 +2,13 @@
 # path to gaze estimator model
 PATH_TO_ESTIMATOR = './app/bin/estimator.h5'
 
+# config for training
+faces_path = 'dataset/{index}/0/'
+eyes_path = faces_path+'eyes/{eye}/'
+path_to_dataset='/Users/rostyslav.db/Documents/beehiveor/datasets/dummy/'
+json_name='normalized_dataset.json'
+path_to_save='./checkpoints/test.h5'
+
 # default config for coarse experiment
 ESCAPE = 27
 DEFAULT_WEBCAM_CAPTURE_TARGET = 0
@@ -38,4 +45,3 @@ SCREEN_PARAMETERS = {'screen_size': (1920, 1080),
                      'diagonal_in_meters': 23 * 0.0254,  # 23 inches in meters
                      'rotation_vector': [[0.3, -0.14, -0.04]],
                      'translation_vector': [[0.38], [-0.1], [-0.75]]}
-
