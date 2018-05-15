@@ -9,6 +9,7 @@ from .nn import create_callbacks
 from os import getcwd
 from numpy import reshape
 from numpy import array
+from numpy import frombuffer
 
 
 def prepare(eye_image, head_pose):
@@ -63,27 +64,24 @@ class GazeNet:
                                 compile=True)
         return self
 
-    def train(self, path_to_dataset, path_to_save, json_name, parser_params, create_new, eye, epochs, batch_size, **kwargs):
+    def train(self, input_train, gazes_train, validation_data, epochs, batch_size, path_to_save, **kwargs):
         if create_new:
             self.model = create_model(**kwargs)
         callbacks = create_callbacks()
 
-        input_train, gazes = read_data(path_to_dataset, json_name, parser_params, eye)
-
         self.model.fit(x=input_train,
-                       y=gazes,
+                       y=gazes_train,
                        batch_size=batch_size,
                        verbose=1,
                        epochs=epochs,
-                       # validation_data=([test_images, test_poses], test_gazes),
+                       validation_data=validation_data,
                        callbacks=callbacks)
 
         self.model.save(path_to_save)
         return self
 
-    def score(self, path_to_dataset, json_name, parser_params, eye, batch_size, **kwargs):
-        input_test, gazes = read_data(path_to_dataset, json_name, parser_params, eye)
-        return self.model.evaluate(input_test, gazes, batch_size=batch_size)
+    def score(self, input_data, gazes, batch_size):
+        return self.model.evaluate(input_data, gazes, batch_size=batch_size)
 
     def estimate_gaze(self, eye_image, head_pose):
         """
