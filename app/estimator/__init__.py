@@ -10,6 +10,7 @@ from os import getcwd
 from numpy import reshape
 from numpy import array
 from numpy import frombuffer
+import os
 
 
 def prepare(eye_image, head_pose):
@@ -64,10 +65,13 @@ class GazeNet:
                                 compile=True)
         return self
 
-    def train(self, input_train, gazes_train, validation_data, epochs, batch_size, path_to_save, **kwargs):
+    def train(self, input_train, gazes_train, epochs, batch_size, create_new, path_to_save, validation_data=None, **kwargs):
         if create_new:
             self.model = create_model(**kwargs)
-        callbacks = create_callbacks()
+        callbacks = create_callbacks(path_to_save)
+
+        if not os.path.exists(path_to_save):
+            os.makedirs(path_to_save)
 
         self.model.fit(x=input_train,
                        y=gazes_train,
@@ -77,11 +81,11 @@ class GazeNet:
                        validation_data=validation_data,
                        callbacks=callbacks)
 
-        self.model.save(path_to_save)
+        self.model.save(f'{path_to_save}/model_last.h5')
         return self
 
     def score(self, input_data, gazes, batch_size):
-        return self.model.evaluate(input_data, gazes, batch_size=batch_size)
+        return self.model.evaluate(prepare(*input_data), gaze3Dto2D(gazes), batch_size=batch_size)
 
     def estimate_gaze(self, eye_image, head_pose):
         """

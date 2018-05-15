@@ -48,7 +48,10 @@ def calc_angle(angles1, angles2):
 
     unit_v1, unit_v2 = unit_vector(to_vector(angles1)), unit_vector(to_vector(angles2))
 
-    return tf.acos(tf.reduce_sum(unit_v1 * unit_v2, axis=1), name='acos') * 180 / pi
+    return tf.acos(
+        tf.clip_by_value(tf.reduce_sum(unit_v1 * unit_v2, axis=1), -1.0, 1.0),
+        name='acos'
+        ) * 180 / pi
 
 def angle_accuracy(target, predicted):
     return tf.reduce_mean(calc_angle(predicted, target), name='mean_angle')
@@ -134,18 +137,18 @@ def create_model(learning_rate=1e-2, seed=None):
     model.compile(optimizer=optimizer, loss="mean_squared_error", metrics=[angle_accuracy])
     return model
 
-def create_callbacks():
+def create_callbacks(path_to_save):
 
     ### CALLBACKS ###
     tbCallBack = TensorBoard(
-        log_dir='./tblog',
+        log_dir='./log/tblog',
         histogram_freq=0,
         write_graph=True,
         write_images=True,
         write_grads=True
         )
     checkpoint = ModelCheckpoint(
-        './checkpoints/model_{epoch}_{val_loss:.4f}.h5',
+        path_to_save+'/model_{epoch}_{val_loss:.4f}.h5',
         monitor='val_loss',
         period=10
         )
