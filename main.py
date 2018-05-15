@@ -6,6 +6,7 @@ import numpy as np
 from app.estimator import GazeNet
 from app.estimator import gaze2Dto3D, gaze3Dto2D
 from app.estimator import prepare
+
 if __name__ == '__main__':
     # TODO what should I do here?
     pass
