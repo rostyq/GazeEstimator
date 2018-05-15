@@ -31,20 +31,6 @@ from app.normalisation.utils import *
 from config import *
 
 
-def train_gaze_net(path_to_dataset, faces_path, eyes_path, json_name, path_to_save, create_new, eye, epochs, batch_size):
-
-    parser_params = dict(images=eyes_path+'image', gazes=eyes_path+'gaze', poses=faces_path+'rotation')
-    gaze_estimator = GazeNet()
-    gaze_estimator.train(path_to_dataset=path_to_dataset,
-                         path_to_save=path_to_save,
-                         json_name=json_name,
-                         parser_params=parser_params,
-                         create_new=create_new,
-                         eye=eye,
-                         epochs=epochs,
-                         batch_size=batch_size)
-
-
 def show_charuco(path_to_image, screen_diagonal, square_length_cm, shift):
     """
     This function shows charuco board on the screen.
