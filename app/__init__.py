@@ -22,8 +22,7 @@ from app.calibration import Calibration
 from app.cv2window import ExperimentWindow
 from app.cv2window import ispressed
 
-from app.estimator import estimate_gaze
-from app.estimator import init_model
+from app.estimator import GazeNet
 
 from app.normalisation import StandNormalizer
 from app.normalisation import Face
@@ -97,7 +96,7 @@ def run_coarse_experiment(average_distance, screen_diagonal, path_to_estimator,
     # prepare working objects
     capture = VideoCapture(capture_target)
     window = ExperimentWindow(__name__, screen_diagonal)
-    gaze_estimator = init_model(path_to_estimator)
+    gaze_estimator = GazeNet().init(path_to_estimator)
     face_recognitor = DlibImageNormalizer(capture.read()[1].shape)
 
     # prepare experiment window
@@ -121,9 +120,7 @@ def run_coarse_experiment(average_distance, screen_diagonal, path_to_estimator,
         try:
             left_eye_img = face_recognitor.fit_transform(capture.read()[1])[0][1]
             print(left_eye_img.shape)
-            left_gaze_vector = estimate_gaze(left_eye_img,
-                                             dummy_head_pose,
-                                             gaze_estimator)
+            left_gaze_vector = gaze_estimator.estimate_gaze(left_eye_img, dummy_head_pose)
             pog_coordinates = calc_pog_coordinates(average_distance,
                                                    left_gaze_vector,
                                                    window.screen_resolution,
