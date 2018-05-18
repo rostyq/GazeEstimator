@@ -4,33 +4,6 @@ from numpy import sqrt
 import numpy as np
 
 
-class Screen(SceneObj):
-    def __init__(self, name, origin=None, matrix=None, distortion=None, diagonal=None, resolution=None):
-        super().__init__(name=name, origin=origin)
-        self.matrix = matrix
-        self.distortion = distortion
-        self.diagonal = diagonal
-        self.resolution = resolution
-        self.heights = heights
-        self.
-        self.mpp = None
-
-    def calc_mpp(self):
-        """
-        mpp - Meters per pixels
-        :return:
-        """
-        self.mpp = self.diagonal / sqrt(self.resolution[0]**2+self.resolution[1]**2)
-
-    def get_point_in_pixels(self, x, y):
-        if not self.mpp:
-            self.calc_mpp()
-        return array([int(coord*axis*self.mpp) for coord, axis in zip((x, y), self.resolution)])
-
-    def point_to_origin(self, x, y):
-        point = array([coord*axis*self.mpp for coord, axis in zip((x, y), self.resolution)]+[0.0])
-        return self.get_rotation_matrix() @ point - self.translation
-
 def plane_line_intersection(line_points, plane_points):
     ''' Compute intersection point of plane and lineself.
 
@@ -84,7 +57,35 @@ def plane_line_intersection(line_points, plane_points):
     return np.linalg.solve(A, B)
 
 
+class Screen(SceneObj):
+    def __init__(self, name, origin=None, matrix=None, distortion=None,
+                 diagonal=None, resolution=None, height=None, width=None):
+        super().__init__(name=name, origin=origin)
+        self.matrix = matrix
+        self.distortion = distortion
+        self.diagonal = diagonal
+        self.resolution = resolution
+        self.height = height
+        self.width = width
+        self.mpp = None
+
+    def calc_mpp(self):
+        """
+        mpp - Meters per pixels
+        :return:
+        """
+        self.mpp = self.diagonal / sqrt(self.resolution[0]**2+self.resolution[1]**2)
+
+    def get_point_in_pixels(self, x, y):
+        if not self.mpp:
+            self.calc_mpp()
+        return array([int(coord*axis*self.mpp) for coord, axis in zip((x, y), self.resolution)])
+
+    def point_to_origin(self, x, y):
+        point = array([coord*axis*self.mpp for coord, axis in zip((x, y), self.resolution)]+[0.0])
+        return self.get_rotation_matrix() @ point - self.translation
+
 
 
 if __name__ == '__main__':
-    print(plane_line_intersection(((-1,-2,3), (-4,0,1)), ((-9,0,0), (0,-3,0), (0,0,9/5))))
+    print(plane_line_intersection(((1, 3, -1), (3,4,2)), ((2,0,0), (0,-4,0), (0,0,4))))
