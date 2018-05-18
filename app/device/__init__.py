@@ -13,29 +13,25 @@ def create_origin_cam(name, matrix, distortion):
     return origin
 
 
-def create_screen(name, extrinsic_matrix, diagonal, resolution, relative=None):
-    extrinsic_matrix = array(extrinsic_matrix).reshape(4, 4)
-    screen = Screen(name=name, origin=relative)
-    screen.translation = extrinsic_matrix[:3, 3]
-    screen.rotation = Rodrigues(extrinsic_matrix[:3, :3])[0]
-    screen.resolution = resolution
-    screen.diagonal = diagonal
-    return screen
-
-
 def from_extrinsic_matrix(name, matrix, relative=None):
-    matrix = array(matrix).reshape(4, 4)
+    matrix = array(matrix)
     obj = SceneObj(name=name, origin=relative)
     obj.translation = matrix[:3, 3]
     obj.rotation = Rodrigues(matrix[:3, :3])[0]
     return obj
 
 
-def cam_from_dict(name, cam_dict, relative=None):
-    cam = Camera(name=name, origin=relative)
+def cam_from_dict(name, cam_dict, origin=None):
+    cam = Camera(name=name, origin=origin)
     # TODO check rotation and translation
-    cam.rotation = array(cam_dict['rotation']).reshape((3,))
-    cam.translation = array(cam_dict['translation']).reshape((3,))
-    cam.matrix = array(cam_dict['matrix']).reshape((3, 3))
-    cam.distortion = array(cam_dict['distortion']).reshape((4,))
+    for key, value in cam_dict.items():
+        cam.__setattr__(key, array(value))
     return cam
+
+
+def screen_from_dict(name, screen_dict, origin=None):
+    screen = Screen(name=name, origin=origin)
+    # TODO check rotation and translation
+    for key, value in screen_dict.items():
+        screen.__setattr__(key, array(value) if isinstance(value, list) else value)
+    return screen

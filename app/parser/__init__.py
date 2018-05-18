@@ -37,7 +37,7 @@ class ExperimentParser:
             with open(gazes_file, 'r') as file:
                 gaze = json.load(file)
             if int(gaze['REC']['FPOGV']) or True:
-                gaze_point = gaze['REC']['FPOGX'], gaze['REC']['FPOGY']
+                gaze_point = tuple(map(float, (gaze['REC']['FPOGX'], gaze['REC']['FPOGY'])))
 
         return frame, face_points, faces_rotations, gaze_point
 

@@ -7,14 +7,21 @@ from numpy.linalg import inv
 
 class SceneObj:
 
+    to_m = {
+        'mm': 1000
+    }
+
     def __init__(self, name, origin, translation=None, rotation=None):
         self.name = name
         self.origin = origin
         self.translation = translation
         self.rotation = rotation
+        self.rotation_matrix = None
 
     def get_rotation_matrix(self):
-        return Rodrigues(self.rotation)[0]
+        if self.rotation_matrix is None:
+            self.rotation_matrix = Rodrigues(self.rotation)[0]
+        return self.rotation_matrix
 
     def get_extrinsic(self):
         return {'rotation': self.rotation, 'translation': self.translation}
@@ -32,15 +39,15 @@ class SceneObj:
             )
         )
 
-    def set_extrinsic_from_matrix(self, matrix):
-        matrix = array(matrix).reshape(4, 4)
-        self.translation = matrix[:3, 3]
-        self.rotation = Rodrigues(matrix[:3, :3])[0]
+    def set_extrinsic_from_matrix(self, matrix, scale='mm'):
+        matrix = array(matrix)
+        self.translation = (matrix[:3, 3] / self.to_m[scale]).reshape(3, 1)
+        self.rotation = (Rodrigues(matrix[:3, :3])[0]).reshape(3, 1)
         return self
 
     def vector_to_origin(self, vector):
-        return inv(self.get_rotation_matrix()) @ (vector - self.translation)
+        return inv(self.get_rotation_matrix()) @ (vector.reshape(3, 1) - self.translation.reshape(3, 1))
 
     def vector_to_self(self, vector):
-        return inv(self.get_rotation_matrix()) @ (vector + self.translation)
+        return self.get_rotation_matrix() @ (vector.reshape(3, 1) + self.translation.reshape(3, 1))
 
