@@ -43,4 +43,3 @@ class SceneObj:
 
     def vector_to_self(self, vector):
         return inv(self.get_rotation_matrix()) @ (vector + self.translation)
-
