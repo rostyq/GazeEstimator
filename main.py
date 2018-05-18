@@ -1,38 +1,37 @@
+from app.device import create_screen
+from app.device import cam_from_dict
 from config import *
-from app import train_gaze_net
-# from app import run_coarse_experiment
-# from app import show_charuco
-import numpy as np
-from app.estimator import GazeNet
-from app.estimator import gaze2Dto3D, gaze3Dto2D
-from app.estimator import prepare
+import json
+import socket
+from app import *
 
-if __name__ == '__main__':
-    # TODO what should I do here?
-    pass
+with open('./extrinsic_params.json', 'r') as f:
+    ext_params = json.load(f)
 
-    # TODO example 1
-    # run_coarse_experiment(average_distance=DEFAULT_AVERAGE_DISTANCE,
-    #                       screen_diagonal=screen_diagonal,
-    #                       path_to_estimator=PATH_TO_ESTIMATOR,
-    #                       capture_target=DEFAULT_WEBCAM_CAPTURE_TARGET,
-    #                       test_ticks_treshold=TEST_TICKS_TRESHOLD,
-    #                       button_code_to_stop=ESCAPE)
+origin = cam_from_dict('ir', CAM_PARAMS.pop('ir'))
 
-    # TODO example 2
-    # show_charuco('./charuco_board.png', 13.3, 4.0, (50, 100))
+cams = [cam_from_dict(name=name, cam_dict=cam_data, relative=origin)
+        for name, cam_data in CAM_PARAMS.items()]
 
-    # TODO net training example
-    # gaze_estimator = GazeNet().init(PATH_TO_ESTIMATOR)
-    #
-    # images = np.zeros((1000, 36, 60), dtype=np.uint8)
-    # poses = np.zeros((1000, 3), dtype=np.float32)
-    # gazes = np.zeros((1000, 3), dtype=np.float32)
-    #
-    # gaze_estimator.train(prepare(images[:750, :], poses[:750, :]),
-    #                      gaze3Dto2D(gazes[:750,:]),
-    #                      validation_data=(prepare(images[750:, :], poses[750:, :]), gaze3Dto2D(gazes[750:,:])),
-    #                      epochs=1,
-    #                      batch_size=64,
-    #                      create_new=False,
-    #                      path_to_save='./checkpoints')
+for cam in cams:
+    cam.set_extrinsic_from_matrix(ext_params[f'{cam.name}_{origin.name}'])
+
+planes = [create_screen(name=plane,
+                        extrinsic_matrix=ext_params[f'{plane}_{origin.name}'],
+                        diagonal=None,
+                        resolution=None,
+                        relative=origin)
+          for plane in ['wall', 'screen']]
+
+
+if __name__ == "__main__":
+    HOST, PORT = "localhost", 5055
+
+    # Init the TCP server object, bind it to the localhost on 5055 port
+    tcp_server = socketserver.TCPServer((HOST, PORT), Handler_TCPServer)
+    # Activate the TCP server.
+    tcp_server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        tcp_server.serve_forever()
+    finally:
+        tcp_server.server_close()

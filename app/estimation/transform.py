@@ -1,6 +1,7 @@
 import numpy as np
 from cv2 import Rodrigues
 
+
 def gaze3Dto2D(vectors, stack=True):
     """
     theta = asin(-y) -- pitch
