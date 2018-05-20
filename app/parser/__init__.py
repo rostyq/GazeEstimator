@@ -3,6 +3,29 @@ from os import listdir
 import json
 from cv2 import imread
 from app.frame import Frame
+from numpy import array
+from numpy import sqrt
+from numpy import zeros
+
+
+def face_point_to_array(dct):
+    return array([dct['X'], dct['Y'], dct['Z']]).reshape(1, 3)
+
+
+def quaternion_to_angle_axis(quaternion):
+    """
+    Converts angle-axis to quaternion
+    :param quaternion: dict {'X': , 'Y': , 'Z': , 'W': }
+    :return: angle-axis rotation vector
+    """
+    t = sqrt(1 - quaternion['W'] * quaternion['W'])
+    if t:
+        x = quaternion['X'] / t
+        y = quaternion['Y'] / t
+        z = quaternion['Z'] / t
+        return array([[x], [y], [z]])
+    else:
+        return zeros((3, 1))
 
 
 class ExperimentParser:
@@ -33,9 +56,9 @@ class ExperimentParser:
     @staticmethod
     def load_json_data(file, data_key):
         if data_key is 'face_points':
-            return json.load(file)
+            return [face_point_to_array(point) for point in json.load(file)]
         if data_key is 'face_poses':
-            return [face_pose['FaceRotationQuaternion'] for face_pose in json.load(file)]
+            return [quaternion_to_angle_axis(face_pose['FaceRotationQuaternion']) for face_pose in json.load(file)]
         if data_key is 'gazes':
             gaze = json.load(file)
             assert int(gaze['REC']['FPOGV'])

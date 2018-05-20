@@ -1,28 +1,5 @@
 from app.device import SceneObj
-from numpy import array
-from numpy import sqrt
-from numpy import zeros
 from numpy import cross
-
-
-def face_point_to_array(dct):
-    return array([dct['X'], dct['Y'], dct['Z']]).reshape(1, 3)
-
-
-def quaternion_to_angle_axis(quaternion):
-    """
-    Converts angle-axis to quaternion
-    :param quaternion: dict {'X': , 'Y': , 'Z': , 'W': }
-    :return: angle-axis rotation vector
-    """
-    t = sqrt(1-quaternion['W']*quaternion['W'])
-    if t:
-        x = quaternion['X'] / t
-        y = quaternion['Y'] / t
-        z = quaternion['Z'] / t
-        return array([[x], [y], [z]])
-    else:
-        return zeros((3, 1))
 
 
 class Actor(SceneObj):
