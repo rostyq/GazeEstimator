@@ -27,8 +27,14 @@ class Frame:
         self.draw_points(self.get_projected_coordinates(vectors), **kwargs)
         return self
 
-    def extract_rectangle(self, p1, p2):
-        return self.image[p1[0]:p2[0], p1[1]:p2[1]]
+    def extract_rectangle(self, coord, shape):
+        """
+
+        :param coord: Left-upper corner.
+        :param shape: Tuple (height, width)
+        :return:
+        """
+        return self.image[coord[0]:coord[0]+shape[0], coord[1]:coord[1]+shape[1]]
 
     def extract_eyes_from_actor(self, actor, shifts=(18, 60)):
         Lstart = self.get_projected_coordinates(actor.landmarks['LeyeI']).flatten()[::-1]

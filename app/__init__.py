@@ -36,9 +36,9 @@ class Handler_TCPServer(socketserver.BaseRequestHandler):
         self.request.sendall(self.data+b'\r\n\r\n')
 
 
-def run_server(HOST="localhost", PORT=5050):
+def run_server(host="localhost", port=5050):
 
-    tcp_server = socketserver.TCPServer((HOST, PORT), Handler_TCPServer)
+    tcp_server = socketserver.TCPServer((host, port), Handler_TCPServer)
     tcp_server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
         tcp_server.serve_forever()

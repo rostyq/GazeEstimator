@@ -37,4 +37,22 @@ INTRINSIC_PARAMS = {
     }
 }
 
+CAM_DIRS = {
+    'color': 'cam_1',
+    'basler': 'cam_8',
+    'web_cam': 'cam_0',
+    'ir': 'cam_2'
+}
+
+DATA_DIRS = {
+    'face_poses': 'cam_6',
+    'gazes': 'cam_9',
+    'face_points': 'cam_7'
+}
+
+ORIGIN_CAM = 'ir'
+
+DATASET_PATH = '/Users/rostyslav.db/Documents/beehiveor/datasets/1526380341/DataSource'
+
 PATH_TO_ESTIMATOR = './app/bin/estimator.h5'
+PATH_TO_FACE_MODEL = './app/bin/face_landmarks.dat'
