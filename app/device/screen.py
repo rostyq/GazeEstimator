@@ -41,9 +41,7 @@ def plane_line_intersection(line_points, plane_points):
     A21 = 0
     A22 = 1 / (line_point_2[1] - line_point_1[1])
     A23 = -1 / (line_point_2[2] - line_point_1[2])
-    A31 = a
-    A32 = b
-    A33 = c
+    A31, A32, A33 = a, b, c
     A = np.array([[A11, A12, A13],
                   [A21, A22, A23],
                   [A31, A32, A33]])
@@ -89,3 +87,4 @@ class Screen(SceneObj):
 
 if __name__ == '__main__':
     print(plane_line_intersection(((1, 3, -1), (3,4,2)), ((2,0,0), (0,-4,0), (0,0,4))))
+    print('Right answer: [3, 4, 2]')
