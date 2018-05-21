@@ -2,7 +2,8 @@ from numpy import copy
 from numpy import array
 from cv2 import projectPoints
 from cv2 import circle
-
+from cv2 import findHomography
+from cv2 import warpPerspective
 
 class Frame:
 
@@ -21,10 +22,11 @@ class Frame:
                              self.camera.rotation,
                              self.camera.translation,
                              self.camera.matrix,
-                             self.camera.distortion)[0].reshape(-1, 2).astype(int)
+                             self.camera.distortion)[0].reshape(-1, 2)
 
     def project_vectors(self, vectors, **kwargs):
-        self.draw_points(self.get_projected_coordinates(vectors), **kwargs)
+        print(self.get_projected_coordinates(vectors).astype(int))
+        self.draw_points(self.get_projected_coordinates(vectors).astype(int), **kwargs)
         return self
 
     def extract_rectangle(self, coord, shape):
@@ -36,8 +38,28 @@ class Frame:
         """
         return self.image[coord[0]:coord[0]+shape[0], coord[1]:coord[1]+shape[1]]
 
-    def extract_eyes_from_actor(self, actor, shifts=(18, 60)):
-        Lstart = self.get_projected_coordinates(actor.landmarks['LeyeI']).flatten()[::-1]
-        Rstart = self.get_projected_coordinates(actor.landmarks['ReyeI']).flatten()[::-1]
-        return self.image[Lstart[0]:Lstart[0] + shifts[0], Lstart[1]-shifts[1]:Lstart[1]], \
-               self.image[Rstart[0]:Rstart[0] + shifts[0], Rstart[1]:Rstart[1]+ shifts[1]]
+    def extract_eyes_from_actor(self, actor, resolution=(60, 36), shifts=(18, 60)):
+        # eye planes
+        left_norm_image_plane = array([[resolution[0], 0.0          ],
+                                        [0.0,           0.0          ],
+                                        [0.,            resolution[1]],
+                                        [resolution[0], resolution[1]]])
+        right_norm_image_plane = array([[0.0,          0.0          ],
+                                         [resolution[0], 0.0         ],
+                                         [resolution[0], resolution[1]],
+                                         [0.,            resolution[1]]])
+        left_eye_projection = self.get_projected_coordinates(actor.landmarks3D['eyes']['left']['rectangle'])
+        right_eye_projection = self.get_projected_coordinates(actor.landmarks3D['eyes']['right']['rectangle'])
+
+        homography, status = findHomography(left_eye_projection, left_norm_image_plane)
+        left_eye_frame = warpPerspective(self.image, homography, resolution)
+
+        homography, status = findHomography(right_eye_projection, right_norm_image_plane)
+        right_eye_frame = warpPerspective(self.image, homography, resolution)
+
+        return left_eye_frame, right_eye_frame
+
+        # Lstart = self.get_projected_coordinates(actor.landmarks['LeyeI']).flatten()[::-1]
+        # Rstart = self.get_projected_coordinates(actor.landmarks['ReyeI']).flatten()[::-1]
+        # return self.image[Lstart[0]:Lstart[0] + shifts[0], Lstart[1]-shifts[1]:Lstart[1]], \
+        #        self.image[Rstart[0]:Rstart[0] + shifts[0], Rstart[1]:Rstart[1]+ shifts[1]]

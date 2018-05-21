@@ -1,6 +1,7 @@
 from numpy import array
 from numpy import hstack
 from numpy import vstack
+from numpy import zeros
 from cv2 import Rodrigues
 from numpy.linalg import inv
 
@@ -11,16 +12,21 @@ class SceneObj:
         'mm': 1000
     }
 
-    def __init__(self, name, origin, translation=None, rotation=None):
+    def __init__(self, name, origin, extrinsic_matrix=None, scale='mm'):
         self.name = name
         self.origin = origin
-        self.translation = translation
-        self.rotation = rotation
-        self.rotation_matrix = None
+        if extrinsic_matrix is None:
+            self.translation = zeros((3, 1))
+            self.rotation = zeros((3, 1))
+        else:
+            extrinsic_matrix = array(extrinsic_matrix)
+            self.translation = (extrinsic_matrix[:3, 3] / self.to_m[scale]).reshape(3, 1)
+            self.rotation = (Rodrigues(extrinsic_matrix[:3, :3])[0]).reshape(3, 1)
+        self.rotation_matrix = Rodrigues(self.rotation)[0]
 
     def get_rotation_matrix(self):
-        if self.rotation_matrix is None:
-            self.rotation_matrix = Rodrigues(self.rotation)[0]
+        # if self.rotation_matrix is None:
+        #     self.rotation_matrix = Rodrigues(self.rotation)[0]
         return self.rotation_matrix
 
     def get_extrinsic(self):
@@ -39,11 +45,11 @@ class SceneObj:
             )
         )
 
-    def set_extrinsic_from_matrix(self, matrix, scale='mm'):
-        matrix = array(matrix)
-        self.translation = (matrix[:3, 3] / self.to_m[scale]).reshape(3, 1)
-        self.rotation = (Rodrigues(matrix[:3, :3])[0]).reshape(3, 1)
-        return self
+    # def set_extrinsic_from_matrix(self, matrix, scale='mm'):
+    #     matrix = array(matrix)
+    #     self.translation = (matrix[:3, 3] / self.to_m[scale]).reshape(3, 1)
+    #     self.rotation = (Rodrigues(matrix[:3, :3])[0]).reshape(3, 1)
+    #     return self
 
     def vector_to_origin(self, vector):
         return inv(self.get_rotation_matrix()) @ (vector.reshape(3, 1) - self.translation.reshape(3, 1))

@@ -22,7 +22,6 @@ if __name__ == "__main__":
 
     origin = scene['origin']
     cams = scene['cameras']
-    cams[ORIGIN_CAM] = origin
     screens = scene['screens']
 
     cams_dict = {cams[cam_name]: cam_dir for cam_name, cam_dir in CAM_DIRS.items()}
@@ -30,4 +29,12 @@ if __name__ == "__main__":
                               data_dict=DATA_DIRS)
     parser.fit(DATASET_PATH)
 
-    snapshots = [{'frames': frames, 'data': data} for frames, data in parser.snapshots_iterate()]
+    snapshots = [{'frames': frames, 'data': data} for frames, data in parser.snapshots_iterate(range(150, 250))]
+    actor = Actor('kek', origin=origin)
+    actor.set_landmarks3d(snapshots[0]['data']['face_points'])
+    frame = snapshots[0]['frames']['color']
+
+    cv2.imshow('kek', frame.extract_eyes_from_actor(actor)[1])
+    print(actor.landmarks3D['eyes']['left']['center'])
+    cv2.imshow('kek2', frame.project_vectors(actor.landmarks3D['eyes']['left']['center']).image)
+    cv2.waitKey()

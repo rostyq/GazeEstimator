@@ -2,8 +2,8 @@ import socketserver
 import socket
 import json
 from app.estimation import GazeNet
-from app.device import cam_from_dict
-from app.device import screen_from_dict
+from app.device.screen import Screen
+from app.device.camera import Camera
 from app.parser import ExperimentParser
 from app.frame import Frame
 from app.actor import Actor
@@ -52,24 +52,25 @@ def ispressed(button, delay=1):
 
 def construct_scene_objects(origin_name, intrinsic_params, extrinsic_params):
 
-    origin = cam_from_dict(origin_name, intrinsic_params['CAMERAS'].pop(origin_name))
+    origin = Camera(name=origin_name, cam_dict=intrinsic_params['CAMERAS'].pop(origin_name))
 
     cams = {
-        name: cam_from_dict(
+        name: Camera(
             name=name,
             cam_dict=cam_data,
+            extrinsic_matrix=(extrinsic_params[f'{name}_{origin.name}']),
             origin=origin
-        ).set_extrinsic_from_matrix(extrinsic_params[f'{name}_{origin.name}'])
-        for name, cam_data in intrinsic_params['CAMERAS'].items()
+        ) for name, cam_data in intrinsic_params['CAMERAS'].items()
     }
+    cams[origin_name] = origin
 
     screens = {
-        name: screen_from_dict(
-            name,
-            screen_data,
+        name: Screen(
+            name=name,
+            screen_dict=screen_data,
+            extrinsic_matrix=extrinsic_params[f'{name}_{origin.name}'],
             origin=origin
-        ).calc_mpp().set_extrinsic_from_matrix(extrinsic_params[f'{name}_{origin.name}'])
-        for name, screen_data in intrinsic_params['SCREENS'].items()
+        ) for name, screen_data in intrinsic_params['SCREENS'].items()
     }
 
     return {'origin': origin, 'cameras': cams, 'screens': screens}

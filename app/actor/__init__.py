@@ -1,33 +1,66 @@
 from app.device import SceneObj
 from numpy import cross
-
+from numpy import array
+from app.parser import quaternion_to_angle_axis, face_point_to_array
 
 class Actor(SceneObj):
 
-    kinect_idx = {
-        'LeyeO': 469,
-        'LeyeI': 210,
-        'ReyeO': 469,
-        'ReyeI': 210,
-        'nose': 18,
-        'chin': 4
-    }
 
-    def __init__(self, name, origin, frame, rectangle=None, landmarks2D=None):
+    def __init__(self, name, origin, rectangle=None, landmarks2D=None):
         super().__init__(name=name, origin=origin)
-        self.frame = frame
         self.rectangle = rectangle
         self.landmarks3D = {}
         self.landmarks2D = landmarks2D
         self.gazes = None
 
-    def set_landmarks3d(self, face_points_json):
-        self.landmarks3D = {
-            key: face_point_to_array(face_points_json[value])
-            for key, value in self.kinect_idx.items()
+    def __dict__(self):
+        return {
+            'eyes': {
+                'left': {
+                    'landmarks': self.landmarks.tolist()[4:],
+                    'center': self.left_eye_center.tolist(),
+                    'gaze': self.real_left_gaze.tolist(),
+                    'gaze_norm': self.real_left_gaze_norm_camera.tolist(),
+                    'image': None
+                },
+                'right': {
+                    'landmarks': self.landmarks.tolist()[:4],
+                    'center': self.right_eye_center.tolist(),
+                    'gaze': self.real_right_gaze.tolist(),
+                    'gaze_norm': self.real_right_gaze_norm_camera.tolist(),
+                    'image': None,
+                }
+            },
+            'rotation': self.rotation_vector.tolist(),
+            'rotation_norm': self.rotation_vector_norm_camera.tolist(),
+            'translation': self.translation_vector.tolist() if self.translation_vector is not None else None,
         }
-        self.landmarks3D['LeyeC'] = (self.landmarks3D['LeyeI'] + self.landmarks3D['LeyeO']) / 2
-        self.landmarks3D['ReyeC'] = (self.landmarks3D['ReyeI'] + self.landmarks3D['ReyeO']) / 2
+
+    def set_landmarks3d(self, face_points):
+        left_eye_rect = array([face_points[i] for i in [1080, 201, 289, 151]])
+        right_eye_rect = array([face_points[i] for i in [1084, 847, 947, 772]])
+
+        LeyeO = array(face_points[469])
+        LeyeI = array(face_points[210])
+        ReyeO = array(face_points[469])
+        ReyeI = array(face_points[210])
+        nose = array(face_points[18])
+        chin = array(face_points[4])
+
+        self.landmarks3D = {
+            'eyes': {
+                'left': {
+                    'rectangle': left_eye_rect,
+                    'center': (LeyeO + LeyeI)/2
+                },
+                'right': {
+                    'rectangle': right_eye_rect,
+                    'center': (ReyeO + ReyeI)/2
+                }
+            },
+            'nose': nose,
+            'chin': chin
+        }
         return self
 
     def set_landmarks2d(self, shape_from_dlib):
@@ -49,5 +82,5 @@ class Actor(SceneObj):
         return self
 
     def get_norm_vector_to_face(self):
-        return cross(self.landmarks3D['chin'] - self.landmarks3D['LeyeO'],
-                     self.landmarks3D['chin'] - self.landmarks3D['ReyeO'])
+        return cross(self.landmarks3D['chin'] - self.landmarks3D['eyes']['left']['center'],
+                     self.landmarks3D['chin'] - self.landmarks3D['eyes']['right']['center'])
