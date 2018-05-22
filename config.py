@@ -56,3 +56,4 @@ DATASET_PATH = r'C:\Users\Valik\Documents\GitHub\dataroot\RETNNA\BAS\1525974053\
 
 PATH_TO_ESTIMATOR = './app/bin/estimator.h5'
 PATH_TO_FACE_MODEL = './app/bin/face_landmarks.dat'
+PATH_TO_FACE_POINTS = './app/bin/face_points_tutorial.mat'

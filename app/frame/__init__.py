@@ -16,9 +16,10 @@ class Frame:
     def draw_points(self, points, radius=10, color=(255, 0, 0)):
         for point in points:
             circle(self.image, tuple(point.astype(int)), radius, color, -1)
+        return self
 
     def get_projected_coordinates(self, vectors):
-        return projectPoints(vectors*self.flip_y_array,
+        return projectPoints(vectors, #*self.flip_y_array,
                              self.camera.rotation,
                              self.camera.translation,
                              self.camera.matrix,
@@ -38,7 +39,7 @@ class Frame:
         """
         return self.image[coord[0]:coord[0]+shape[0], coord[1]:coord[1]+shape[1]]
 
-    def extract_eyes_from_actor(self, actor, resolution=(60, 36), shifts=(18, 60)):
+    def extract_eyes_from_actor(self, actor, resolution=(60, 36)):
         # eye planes
         left_norm_image_plane = array([[resolution[0], 0.0          ],
                                         [0.0,           0.0          ],

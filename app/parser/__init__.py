@@ -9,7 +9,7 @@ from numpy import zeros
 
 
 def face_point_to_array(dct):
-    return array([dct['X'], dct['Y'], dct['Z']]).reshape(1, 3)
+    return array([dct['X'], dct['Y'], dct['Z']]).reshape(1, 3) * array([[1], [-1], [1]])
 
 
 def quaternion_to_angle_axis(quaternion):

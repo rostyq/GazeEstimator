@@ -51,9 +51,9 @@ class SceneObj:
     #     self.rotation = (Rodrigues(matrix[:3, :3])[0]).reshape(3, 1)
     #     return self
 
-    def vector_to_origin(self, vector):
-        return inv(self.get_rotation_matrix()) @ (vector.reshape(3, 1) - self.translation.reshape(3, 1))
+    def vectors_to_origin(self, vectors):
+        return inv(self.get_rotation_matrix()) @ (vectors.reshape(3, -1) - self.translation.reshape(3, 1))
 
-    def vector_to_self(self, vector):
-        return self.get_rotation_matrix() @ (vector.reshape(3, 1) + self.translation.reshape(3, 1))
+    def vectors_to_self(self, vectors):
+        return self.get_rotation_matrix() @ (vectors.reshape(3, -1) + self.translation.reshape(3, 1))
 
