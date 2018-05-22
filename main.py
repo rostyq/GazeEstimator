@@ -1,12 +1,11 @@
 from config import *
 from app import construct_scene_objects
-import json
-from app.parser import ExperimentParser
-from app.actor import Actor
-from app import ispressed
-import cv2
-import numpy as np
+from app import ExperimentParser
+from app import Actor
+from app import MyTCPHandler
 from app.estimation import ActorDetector
+import json
+import socketserver
 
 
 if __name__ == "__main__":
@@ -30,5 +29,15 @@ if __name__ == "__main__":
     parser = ExperimentParser(cams_dict=cams_dict,
                               data_dict=DATA_DIRS)
     parser.fit(DATASET_PATH)
-
     snapshots = [{'frames': frames, 'data': data} for frames, data in parser.snapshots_iterate(range(0, 50))]
+
+    # HOST, PORT = '127.0.0.1', 5055
+    #
+    # # Create the server, binding to localhost on port 9999
+    # server = socketserver.TCPServer((HOST, PORT), MyTCPHandler)
+    # # server.TCPServer.allow_reuse_address = True
+    #
+    # # Activate the server; this will keep running until you
+    # # interrupt the program with Ctrl-C
+    # print("Server started")
+    # server.serve_forever()
