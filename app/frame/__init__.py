@@ -26,7 +26,6 @@ class Frame:
                              self.camera.distortion)[0].reshape(-1, 2)
 
     def project_vectors(self, vectors, **kwargs):
-        print(self.get_projected_coordinates(vectors).astype(int))
         self.draw_points(self.get_projected_coordinates(vectors).astype(int), **kwargs)
         return self
 
@@ -59,8 +58,3 @@ class Frame:
         right_eye_frame = warpPerspective(self.image, homography, resolution)
 
         return left_eye_frame, right_eye_frame
-
-        # Lstart = self.get_projected_coordinates(actor.landmarks['LeyeI']).flatten()[::-1]
-        # Rstart = self.get_projected_coordinates(actor.landmarks['ReyeI']).flatten()[::-1]
-        # return self.image[Lstart[0]:Lstart[0] + shifts[0], Lstart[1]-shifts[1]:Lstart[1]], \
-        #        self.image[Rstart[0]:Rstart[0] + shifts[0], Rstart[1]:Rstart[1]+ shifts[1]]

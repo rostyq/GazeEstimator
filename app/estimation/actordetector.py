@@ -9,6 +9,7 @@ from cv2 import solvePnP, SOLVEPNP_ITERATIVE
 from cv2 import Rodrigues
 from numpy import array
 from numpy.linalg import inv
+from numpy import tile
 
 
 class ActorDetector:
@@ -18,7 +19,7 @@ class ActorDetector:
         self.predictor = shape_predictor(path_to_face_model)
         self.factor = factor
         self.eye_height = 70 * 0.0001
-        self.eye_width = 200 * 0.0001
+        self.eye_width = 180 * 0.0001
         self.model_points = loadmat(path_to_face_points)['model'] * array([1, -1, 1]) * 0.0001
         self.landmarks_to_model = {31: 0,  # Nose tip
                                    9: 1,  # Chin
@@ -58,8 +59,18 @@ class ActorDetector:
 
     def _vectors_from_model_to_origin(self, vectors, rotation_vector, translation_vector, camera):
         rotation_matrix = Rodrigues(rotation_vector)[0]
-        vectors_camera_space = inv(rotation_matrix) @ (vectors - translation_vector)
+        vectors_camera_space = rotation_matrix @ vectors + translation_vector
         return camera.vectors_to_origin(vectors_camera_space)
+
+    def _eye_rectagle(self, eye_model_space, left=True):
+        eye_rectangle_model_space = tile(eye_model_space, (4, 1))
+        eye_rectangle_model_space[0:2, 1] = eye_rectangle_model_space[0:2, 1] - self.eye_height
+        eye_rectangle_model_space[2:4, 1] = eye_rectangle_model_space[2:4, 1] + self.eye_height
+        if left:
+            eye_rectangle_model_space[1:3, 0] = eye_rectangle_model_space[1:3, 0] + self.eye_width
+        else:
+            eye_rectangle_model_space[1:3, 0] = eye_rectangle_model_space[1:3, 0] - self.eye_width
+        return eye_rectangle_model_space.T
 
     def detect_actors(self, frame, origin):
         image_for_detector = self.downscale(self.to_grayscale(frame.image))
@@ -79,16 +90,8 @@ class ActorDetector:
             left_eye_model_space, right_eye_model_space = self.model_points[2], self.model_points[3]
             nose_model_space, chin_model_space = self.model_points[0], self.model_points[1]
 
-            left_eye_rectangle_model_space = array(
-                [[left_eye_model_space[0],                  left_eye_model_space[1] - self.eye_height, left_eye_model_space[2]],
-                 [left_eye_model_space[0] + self.eye_width, left_eye_model_space[1] - self.eye_height, left_eye_model_space[2]],
-                 [left_eye_model_space[0] + self.eye_width, left_eye_model_space[1] + self.eye_height, left_eye_model_space[2]],
-                 [left_eye_model_space[0],                  left_eye_model_space[1] + self.eye_height, left_eye_model_space[2]]]).T
-            right_eye_rectangle_model_space = array(
-                [[right_eye_model_space[0],                  right_eye_model_space[1] - self.eye_height, right_eye_model_space[2]],
-                 [right_eye_model_space[0] - self.eye_width, right_eye_model_space[1] - self.eye_height, right_eye_model_space[2]],
-                 [right_eye_model_space[0] - self.eye_width, right_eye_model_space[1] + self.eye_height, right_eye_model_space[2]],
-                 [right_eye_model_space[0],                  right_eye_model_space[1] + self.eye_height, right_eye_model_space[2]]]).T
+            left_eye_rectangle_model_space = self._eye_rectagle(left_eye_model_space, left=True)
+            right_eye_rectangle_model_space = self._eye_rectagle(right_eye_model_space, left=False)
 
             left_eye_rectangle_origin_space = self._vectors_from_model_to_origin(left_eye_rectangle_model_space,
                                                                                  rotation_vector,
@@ -98,19 +101,20 @@ class ActorDetector:
                                                                                   rotation_vector,
                                                                                   translation_vector,
                                                                                   frame.camera)
-            nose_origin_space = self._vectors_from_model_to_origin(nose_model_space.T,
+
+            nose_origin_space = self._vectors_from_model_to_origin(nose_model_space.reshape((3, 1)),
                                                                    rotation_vector,
                                                                    translation_vector,
                                                                    frame.camera)
-            chin_origin_space = self._vectors_from_model_to_origin(chin_model_space.T,
+            chin_origin_space = self._vectors_from_model_to_origin(chin_model_space.reshape((3, 1)),
                                                                    rotation_vector,
                                                                    translation_vector,
                                                                    frame.camera)
 
             actor = Actor(name=f'Actor{i}', origin=origin)
             actor.set_landmarks3d_eye_rectangles(left_eye_rectangle_origin_space.T, right_eye_rectangle_origin_space.T)
-            actor.set_landmarks3d_nose_chin(nose_origin_space, chin_origin_space)
-            actor.rotation = rotation_vector
+            actor.set_landmarks3d_nose_chin(nose_origin_space.reshape(3), chin_origin_space.reshape(3))
+            actor.rotation = - frame.camera.rotation + rotation_vector
             actors.append(actor)
 
         return actors

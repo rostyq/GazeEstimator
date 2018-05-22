@@ -31,10 +31,4 @@ if __name__ == "__main__":
                               data_dict=DATA_DIRS)
     parser.fit(DATASET_PATH)
 
-    # snapshots = [{'frames': frames, 'data': data} for frames, data in parser.snapshots_iterate(range(0, 50))]
-    # frame = snapshots[0]['frames']['basler']
-    # actors = face_detector.detect_actors(frame, origin)
-    # print(actors[0].landmarks3D)
-    # cv2.imshow('kek1', cv2.resize(frame.project_vectors(np.array(left)).image, (300, 300)))
-    # cv2.imshow('kek2', cv2.resize(frame.project_vectors(np.array(right)).image, (300, 300)))
-    # cv2.waitKey()
+    snapshots = [{'frames': frames, 'data': data} for frames, data in parser.snapshots_iterate(range(0, 50))]
