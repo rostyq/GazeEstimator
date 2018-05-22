@@ -21,17 +21,16 @@ def from_extrinsic_matrix(name, matrix, relative=None):
     return obj
 
 
-def cam_from_dict(name, cam_dict, origin=None):
-    cam = Camera(name=name, origin=origin)
-    # TODO check rotation and translation
-    for key, value in cam_dict.items():
-        cam.__setattr__(key, array(value))
-    return cam
+# def cam_from_dict(name, cam_dict, origin=None):
+#     cam = Camera(name=name, origin=origin)
+#     # TODO check rotation and translation
+#     for key, value in cam_dict.items():
+#         cam.__setattr__(key, array(value))
+#     return cam
 
 
-def screen_from_dict(name, screen_dict, origin=None):
-    screen = Screen(name=name, origin=origin)
-    # TODO check rotation and translation
-    for key, value in screen_dict.items():
-        screen.__setattr__(key, array(value) if isinstance(value, list) else value)
-    return screen
+# def screen_from_dict(name, screen_dict, origin=None):
+#     screen = Screen(name=name, screen_dict=screen_dict, origin=origin)
+#     # TODO check rotation and translation
+#
+#     return screen

@@ -9,7 +9,7 @@ from numpy import zeros
 
 
 def face_point_to_array(dct):
-    return array([dct['X'], dct['Y'], dct['Z']]).reshape(1, 3)
+    return array([dct['X'], dct['Y'], dct['Z']]).reshape(1, 3) * array([[1], [-1], [1]])
 
 
 def quaternion_to_angle_axis(quaternion):
@@ -85,13 +85,13 @@ class ExperimentParser:
     def read_snapshot(self, snapshot):
         return self.read_frames(snapshot), self.read_data(snapshot)
 
-    def snapshots_iterate(self):
+    def snapshots_iterate(self, indices):
         """
         Dataset generator
         :param indices: indices of snapshots, according to BRS
         :return: yield tuple(frame, face_points, faces_rotations)
         """
-        for snapshot in self.snapshots:
+        for snapshot in [self.snapshots[i] for i in indices]:
             snapshot_data = self.read_snapshot(snapshot)
             if all(snapshot_data):
                 yield snapshot_data
