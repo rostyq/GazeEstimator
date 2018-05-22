@@ -1,47 +1,59 @@
-
-# path to gaze estimator model
-PATH_TO_ESTIMATOR = './app/bin/estimator.h5'
-
-# config for training
-faces_path = 'dataset/{index}/0/'
-eyes_path = faces_path+'eyes/{eye}/'
-path_to_dataset='/Users/rostyslav.db/Documents/beehiveor/datasets/dummy/'
-json_name='normalized_dataset.json'
-path_to_save='./checkpoints/test.h5'
-
-# default config for coarse experiment
-ESCAPE = 27
-DEFAULT_WEBCAM_CAPTURE_TARGET = 0
-TEST_TICKS_TRESHOLD = 10
-DEFAULT_AVERAGE_DISTANCE = 12
-
-# screen parameters
-screen_diagonal = 13.3
-
-CAMERAS_PARAMETERS = {
-    'colored_camera': {'matrix': [[1051.7, 0.,     957.6],
-                                  [0.,     1051.7, 537.6],
-                                  [0.,     0.,     1.   ]],
-                       'distortion': [-0.0026, 0.1780, 0.0011, 0.0003],
-                       'rotation_vector': [[0.00012], [-0.00052], [0.00035]],
-                       'translation_vector': [[0.0517095], [0.0012225], [0.0013196]]},
-
-    'basler': {'matrix': [[1896.6, 0.,     654.8],
-                          [0.,     1897.9, 461.5],
-                          [0.,     0.,     1.   ]],
-               'distortion': [-0.6819, 0.3729, -0.0021, -0.0005],
-               'rotation_vector': [[0.0497], [0.0409], [0.0621]],
-               'translation_vector': [[0.1459533], [0.0609501], [0.0100126]]},
-
-    'ir-camera': {'matrix': [[363.6643, 0.,       257.1285],
-                             [0.,       363.7357, 208.6171],
-                             [0.,       0.,       1.]],
-                  'distortion': [0.1014, -0.2622, 0.0017, -0.0019],
-                  'rotation_vector': [[0.], [0.], [0.]],
-                  'translation_vector': [[0.], [0.], [0.]]}
+INTRINSIC_PARAMS = {
+    'CAMERAS': {
+        'color': {
+            'matrix': [[1051.7, 0.,     957.6],
+                       [0.,     1051.7, 537.6],
+                       [0.,     0.,     1.   ]],
+            'distortion': [-0.0026, 0.1780, 0.0011, 0.0003],
+        },
+        'basler': {
+            'matrix': [[1896.6, 0.,     654.8],
+                       [0.,     1897.9, 461.5],
+                       [0.,     0.,     1.   ]],
+            'distortion': [-0.6819, 0.3729, -0.0021, -0.0005],
+        },
+        'ir': {
+            'matrix': [[363.6643, 0.,       257.1285],
+                       [0.,       363.7357, 208.6171],
+                       [0.,       0.,       1.]],
+            'distortion': [0.1014, -0.2622, 0.0017, -0.0019],
+        },
+        'web_cam': {
+            'matrix': [[363.6643, 0., 257.1285],
+                       [0., 363.7357, 208.6171],
+                       [0., 0., 1.]],
+            'distortion': [0.1014, -0.2622, 0.0017, -0.0019],
+        }
+    },
+    'SCREENS': {
+        'wall': {
+            'resolution': (1920, 1080),
+            'diagonal': 23 * 0.0254,  # 23 inches in meters
+         },
+        'screen': {
+            'resolution': (1920, 1080),
+            'diagonal': 3.0,  # 23 inches in meters
+        },
+    }
 }
 
-SCREEN_PARAMETERS = {'screen_size': (1920, 1080),
-                     'diagonal_in_meters': 23 * 0.0254,  # 23 inches in meters
-                     'rotation_vector': [[0.3, -0.14, -0.04]],
-                     'translation_vector': [[0.38], [-0.1], [-0.75]]}
+CAM_DIRS = {
+    'color': 'cam_1',
+    'basler': 'cam_8',
+    'web_cam': 'cam_0',
+    'ir': 'cam_2'
+}
+
+DATA_DIRS = {
+    'face_poses': 'cam_6',
+    'gazes': 'cam_9',
+    'face_points': 'cam_7'
+}
+
+ORIGIN_CAM = 'ir'
+
+DATASET_PATH = r'C:\Users\Valik\Documents\GitHub\dataroot\RETNNA\BAS\1525974053\DataSource'
+
+PATH_TO_ESTIMATOR = './app/bin/estimator.h5'
+PATH_TO_FACE_MODEL = './app/bin/face_landmarks.dat'
+PATH_TO_FACE_POINTS = './app/bin/face_points_tutorial.mat'

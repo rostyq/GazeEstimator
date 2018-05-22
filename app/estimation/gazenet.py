@@ -1,5 +1,4 @@
 from keras.models import load_model
-from .parser import DatasetParser
 from .transform import gaze2Dto3D
 from .transform import gaze3Dto2D
 from .transform import pose3Dto2D
@@ -7,7 +6,6 @@ from .nn import angle_accuracy
 from .nn import create_model
 from .nn import create_callbacks
 from numpy import reshape
-from numpy import array
 import os
 
 

@@ -1,38 +1,43 @@
 from config import *
-from app import train_gaze_net
-# from app import run_coarse_experiment
-# from app import show_charuco
-import numpy as np
-from app.estimator import GazeNet
-from app.estimator import gaze2Dto3D, gaze3Dto2D
-from app.estimator import prepare
+from app import construct_scene_objects
+from app import ExperimentParser
+from app import Actor
+from app import MyTCPHandler
+from app.estimation import ActorDetector
+import json
+import socketserver
 
-if __name__ == '__main__':
-    # TODO what should I do here?
-    pass
 
-    # TODO example 1
-    # run_coarse_experiment(average_distance=DEFAULT_AVERAGE_DISTANCE,
-    #                       screen_diagonal=screen_diagonal,
-    #                       path_to_estimator=PATH_TO_ESTIMATOR,
-    #                       capture_target=DEFAULT_WEBCAM_CAPTURE_TARGET,
-    #                       test_ticks_treshold=TEST_TICKS_TRESHOLD,
-    #                       button_code_to_stop=ESCAPE)
+if __name__ == "__main__":
 
-    # TODO example 2
-    # show_charuco('./charuco_board.png', 13.3, 4.0, (50, 100))
+    face_detector = ActorDetector(path_to_face_model=PATH_TO_FACE_MODEL,
+                                  path_to_face_points=PATH_TO_FACE_POINTS,
+                                  factor=6)
 
-    # TODO net training example
-    # gaze_estimator = GazeNet().init(PATH_TO_ESTIMATOR)
+    with open('./extrinsic_params.json', 'r') as f:
+        extrinsic_params = json.load(f)
+
+    scene = construct_scene_objects(origin_name=ORIGIN_CAM,
+                                    intrinsic_params=INTRINSIC_PARAMS,
+                                    extrinsic_params=extrinsic_params)
+
+    origin = scene['origin']
+    cams = scene['cameras']
+    screens = scene['screens']
+
+    cams_dict = {cams[cam_name]: cam_dir for cam_name, cam_dir in CAM_DIRS.items()}
+    parser = ExperimentParser(cams_dict=cams_dict,
+                              data_dict=DATA_DIRS)
+    parser.fit(DATASET_PATH)
+    snapshots = [{'frames': frames, 'data': data} for frames, data in parser.snapshots_iterate(range(0, 50))]
+
+    # HOST, PORT = '127.0.0.1', 5055
     #
-    # images = np.zeros((1000, 36, 60), dtype=np.uint8)
-    # poses = np.zeros((1000, 3), dtype=np.float32)
-    # gazes = np.zeros((1000, 3), dtype=np.float32)
+    # # Create the server, binding to localhost on port 9999
+    # server = socketserver.TCPServer((HOST, PORT), MyTCPHandler)
+    # # server.TCPServer.allow_reuse_address = True
     #
-    # gaze_estimator.train(prepare(images[:750, :], poses[:750, :]),
-    #                      gaze3Dto2D(gazes[:750,:]),
-    #                      validation_data=(prepare(images[750:, :], poses[750:, :]), gaze3Dto2D(gazes[750:,:])),
-    #                      epochs=1,
-    #                      batch_size=64,
-    #                      create_new=False,
-    #                      path_to_save='./checkpoints')
+    # # Activate the server; this will keep running until you
+    # # interrupt the program with Ctrl-C
+    # print("Server started")
+    # server.serve_forever()
