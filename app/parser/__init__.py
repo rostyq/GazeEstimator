@@ -7,6 +7,7 @@ from app.frame import Frame
 from numpy import array
 from numpy import sqrt
 from numpy import zeros
+from collections import OrderedDict
 
 
 def face_point_to_array(dct):
@@ -57,9 +58,10 @@ class ExperimentParser:
     @staticmethod
     def load_json_data(file, data_key):
         if data_key is 'face_points':
-            return [[face_point_to_array(face[point]) for point in face.keys()] for face in bson.decode_all(file.read())]
+            face_points = OrderedDict(bson.loads(file.read()))
+            return [face_point_to_array(face_points[point]) for point in face_points.keys()]
         if data_key is 'face_poses':
-            return [quaternion_to_angle_axis(face_pose['FaceRotationQuaternion']) for face_pose in bson.decode_all(file.read())]
+            return [quaternion_to_angle_axis(face_pose['FaceRotationQuaternion']) for face_pose in bson.loads(file.read())]
         if data_key is 'gazes':
             gaze = json.load(file)
             assert int(gaze['REC']['FPOGV'])
