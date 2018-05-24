@@ -29,8 +29,8 @@ if __name__ == "__main__":
     parser = ExperimentParser(cams_dict=cams_dict,
                               data_dict=DATA_DIRS)
     parser.fit(DATASET_PATH)
-    snapshots = [{'frames': frames, 'data': data} for frames, data in parser.snapshots_iterate(range(0, 50))]
 
+    snapshots = [{'frames': frames, 'data': data} for frames, data in parser.snapshots_iterate(range(0, 10))]
     # HOST, PORT = '127.0.0.1', 5055
     #
     # # Create the server, binding to localhost on port 9999

@@ -1,6 +1,7 @@
 from os import path as Path
 from os import listdir
 import json
+import bson
 from cv2 import imread
 from app.frame import Frame
 from numpy import array
@@ -9,7 +10,7 @@ from numpy import zeros
 
 
 def face_point_to_array(dct):
-    return array([dct['X'], dct['Y'], dct['Z']]).reshape(1, 3) * array([[1], [-1], [1]])
+    return array([dct['X'], dct['Y'], dct['Z']]).reshape(3, 1) * array([[1], [-1], [1]])
 
 
 def quaternion_to_angle_axis(quaternion):
@@ -56,9 +57,9 @@ class ExperimentParser:
     @staticmethod
     def load_json_data(file, data_key):
         if data_key is 'face_points':
-            return [face_point_to_array(point) for point in json.load(file)]
+            return [[face_point_to_array(face[point]) for point in face.keys()] for face in bson.decode_all(file.read())]
         if data_key is 'face_poses':
-            return [quaternion_to_angle_axis(face_pose['FaceRotationQuaternion']) for face_pose in json.load(file)]
+            return [quaternion_to_angle_axis(face_pose['FaceRotationQuaternion']) for face_pose in bson.decode_all(file.read())]
         if data_key is 'gazes':
             gaze = json.load(file)
             assert int(gaze['REC']['FPOGV'])
@@ -68,32 +69,41 @@ class ExperimentParser:
 
     def read_data(self, snapshot):
         data = {}
-        try:
-            for data_key, data_dir in self.data_dict.items():
-                with open(Path.join(self.path_to_dataset, data_dir, snapshot + '.txt'), 'r') as file:
+        for data_key, data_dir in self.data_dict.items():
+            if data_key == 'gazes':
+                ext = '.txt'
+                mode = 'r'
+            else:
+                ext = '.dat'
+                mode = 'rb'
+            try:
+                with open(Path.join(self.path_to_dataset, data_dir, snapshot + ext), mode) as file:
                     data[data_key] = self.load_json_data(file, data_key)
-            return data
-        except FileNotFoundError:
-            # TODO add logger
-            print(f'WARNING: {data_key} {snapshot} in {data_dir} not found.')
-            return None
-        except AssertionError:
-            # TODO add logger
-            print(f'WARNING: {data_key} {snapshot} have non-valid gaze point.')
-            return None
+            except FileNotFoundError:
+                # TODO add logger
+                print(f'WARNING: {data_key} {snapshot} in {data_dir} not found.')
+                data[data_key] = None
+            except AssertionError:
+                # TODO add logger
+                print(f'WARNING: {data_key} {snapshot} have non-valid gaze point.')
+                data[data_key] = None
+        return data
 
     def read_snapshot(self, snapshot):
         return self.read_frames(snapshot), self.read_data(snapshot)
 
-    def snapshots_iterate(self, indices):
+    def snapshots_iterate(self, indices=None):
         """
         Dataset generator
         :param indices: indices of snapshots, according to BRS
         :return: yield tuple(frame, face_points, faces_rotations)
         """
+        if indices is None:
+            indices = range(len(self.snapshots))
         for snapshot in [self.snapshots[i] for i in indices]:
             snapshot_data = self.read_snapshot(snapshot)
-            if all(snapshot_data):
-                yield snapshot_data
-            else:
-                pass
+            yield snapshot_data
+            # if all(snapshot_data):
+            #     yield snapshot_data
+            # else:
+            #     pass

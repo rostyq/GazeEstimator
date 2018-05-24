@@ -83,7 +83,8 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
 
 def construct_scene_objects(origin_name, intrinsic_params, extrinsic_params):
 
-    origin = Camera(name=origin_name, cam_dict=intrinsic_params['CAMERAS'].pop(origin_name))
+    params = {key: value for key, value in intrinsic_params['CAMERAS'].items() if key != origin_name}
+    origin = Camera(name=origin_name, cam_dict=intrinsic_params['CAMERAS'][origin_name])
 
     cams = {
         name: Camera(
@@ -91,7 +92,7 @@ def construct_scene_objects(origin_name, intrinsic_params, extrinsic_params):
             cam_dict=cam_data,
             extrinsic_matrix=(extrinsic_params[f'{name}_{origin.name}']),
             origin=origin
-        ) for name, cam_data in intrinsic_params['CAMERAS'].items()
+        ) for name, cam_data in params.items()
     }
     cams[origin_name] = origin
 
