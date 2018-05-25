@@ -15,6 +15,7 @@ if __name__ == "__main__":
 
     face_detector = ActorDetector(path_to_face_model=PATH_TO_FACE_MODEL,
                                   path_to_face_points=PATH_TO_FACE_POINTS,
+                                  path_to_hc_model=PATH_TO_HAARCASCADE_MODEL,
                                   factor=6)
     if len(sys.argv) == 2:
         DATASET_PATH = sys.argv[1]

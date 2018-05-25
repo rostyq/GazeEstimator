@@ -1,12 +1,14 @@
 from app.actor import Actor
-from dlib import get_frontal_face_detector
 from dlib import shape_predictor
+from dlib import rectangle as DlibRectangle
+from dlib import rectangles as DlibRectangles
 from scipy.io import loadmat
 from cv2 import resize
 from cv2 import cvtColor
 from cv2 import COLOR_BGR2GRAY
 from cv2 import solvePnP, SOLVEPNP_ITERATIVE
 from cv2 import Rodrigues
+from cv2 import CascadeClassifier
 from numpy import array
 from numpy.linalg import inv
 from numpy import tile
@@ -16,6 +18,11 @@ class ActorDetector:
 
     def __init__(self, path_to_face_model, path_to_face_points, factor, chin_nose_distance=0.065):
         self.detector = get_frontal_face_detector()
+#     def __init__(self, path_to_face_model, path_to_face_points, path_to_hc_model, factor, scale=1.3, minNeighbors=5):
+#         # self.detector = get_frontal_face_detector()
+#         self.detector = CascadeClassifier(path_to_hc_model).detectMultiScale
+#         self.scale = scale
+#         self.minNeighbors = minNeighbors
         self.predictor = shape_predictor(path_to_face_model)
         self.factor = factor
         self.model_points = loadmat(path_to_face_points)['model'] * array([-1, -1, 1])
@@ -44,6 +51,11 @@ class ActorDetector:
     @staticmethod
     def shape_to_np(shape, dtype='int'):
         return array([[shape.part(i).x, shape.part(i).y] for i in range(0, 68)], dtype=dtype)
+
+    @staticmethod
+    def cvface2dlibrects(cvfaces):
+        return DlibRectangles([DlibRectangle(*cvface[:2], *(cvface[:2] + cvface[2:]))
+                               for cvface in cvfaces])
 
     def _extract_face_landmarks(self, landmarks2D):
         """
@@ -77,7 +89,10 @@ class ActorDetector:
 
     def detect_actors(self, frame, origin):
         image_for_detector = self.downscale(self.to_grayscale(frame.image))
-        rectangles = self.detector(image_for_detector)
+        rectangles = self.cvface2dlibrects(self.detector(image_for_detector,
+                                                         scaleFactor=self.scale,
+                                                         minNeighbors=self.minNeighbors))
+
         landmarks2D = [self.rescale_coordinates(self.shape_to_np(self.predictor(image_for_detector, rectangle)))
                        for rectangle in rectangles]
         face_landmarks2D = self._extract_face_landmarks(landmarks2D)
