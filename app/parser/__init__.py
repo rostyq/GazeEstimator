@@ -1,15 +1,18 @@
 from os import path as Path
 from os import listdir
 import json
+import bson
 from cv2 import imread
 from app.frame import Frame
 from numpy import array
 from numpy import sqrt
 from numpy import zeros
+from collections import OrderedDict
+from tqdm import tqdm
 
 
 def face_point_to_array(dct):
-    return array([dct['X'], dct['Y'], dct['Z']]).reshape(1, 3) * array([[1], [-1], [1]])
+    return array([dct['X'], dct['Y'], dct['Z']]).reshape(3) * array([1, -1, 1])
 
 
 def quaternion_to_angle_axis(quaternion):
@@ -30,18 +33,39 @@ def quaternion_to_angle_axis(quaternion):
 
 class ExperimentParser:
 
-    def __init__(self, cams_dict, data_dict):
+    def __init__(self, session_code):
         self.path_to_dataset = None
-        self.cams_dict = cams_dict
-        self.data_dict = data_dict
+        self.cams_dict = None
+        self.data_dict = None
         self.snapshots = None
+        self.session_code = session_code
 
-    def fit(self, path_to_dataset):
-        self.path_to_dataset = path_to_dataset
+    def fit(self, path_to_dataset, scene):
+        self.path_to_dataset = Path.join(path_to_dataset, 'DataSource')
+        self.cams_dict, self.data_dict = self.read_device_mapping(Path.join(path_to_dataset, 'DeviceMapping.txt'))
+        self.cams_dict = {scene.cams[cam_name]: cam_dir for cam_name, cam_dir in self.cams_dict.items()}
         self.snapshots = sorted([
             Path.splitext(frame_index)[0]
             for frame_index in listdir(Path.join(self.path_to_dataset, list(self.cams_dict.values())[0]))
         ])
+
+    @staticmethod
+    def read_device_mapping(file):
+        with open(file, mode='r') as mapping:
+            mapping = mapping.read().split(sep='\n')
+            mapping = {item.split(sep=';')[1]: item.split(sep=';')[0] for item in mapping[:-1]}
+            cams_dict = {
+                'color': mapping[' Kinect.Color'],
+                'basler': mapping[' InfraredCamera'],
+                'web_cam': mapping[' WebCamera'],
+                'ir': mapping[' Kinect.Infrared']
+            }
+            data_dict = {
+                'face_poses': mapping[' Kinect.Face'],
+                'gazes': mapping[' Gazepoint'],
+                'face_points': mapping[' Kinect.FaceVertices']
+            }
+            return cams_dict, data_dict
 
     def read_frame(self, cam, snapshot):
         frame_file = Path.join(self.path_to_dataset, self.cams_dict[cam], snapshot + '.png')
@@ -56,44 +80,62 @@ class ExperimentParser:
     @staticmethod
     def load_json_data(file, data_key):
         if data_key is 'face_points':
-            return [face_point_to_array(point) for point in json.load(file)]
+            face_points = OrderedDict(bson.loads(file.read()))
+            return [face_point_to_array(face_points[point]) for point in face_points.keys()]
         if data_key is 'face_poses':
-            return [quaternion_to_angle_axis(face_pose['FaceRotationQuaternion']) for face_pose in json.load(file)]
+            return [quaternion_to_angle_axis(face_pose['FaceRotationQuaternion']) for face_pose in bson.loads(file.read())]
         if data_key is 'gazes':
             gaze = json.load(file)
-            assert int(gaze['REC']['FPOGV'])
+            if not gaze or not 'REC' in gaze.keys() or int(gaze['REC']['FPOGV']) == 0:
+                return None
             return tuple(map(float, (gaze['REC']['FPOGX'], gaze['REC']['FPOGY'])))
         else:
             raise Exception('Wrong data_key.')
 
-    def read_data(self, snapshot):
+    def read_data(self, snapshot, verbose):
         data = {}
-        try:
-            for data_key, data_dir in self.data_dict.items():
-                with open(Path.join(self.path_to_dataset, data_dir, snapshot + '.txt'), 'r') as file:
+        for data_key, data_dir in self.data_dict.items():
+            if data_key == 'gazes':
+                ext = '.txt'
+                mode = 'r'
+            else:
+                ext = '.dat'
+                mode = 'rb'
+            try:
+                with open(Path.join(self.path_to_dataset, data_dir, snapshot + ext), mode) as file:
                     data[data_key] = self.load_json_data(file, data_key)
-            return data
-        except FileNotFoundError:
-            # TODO add logger
-            print(f'WARNING: {data_key} {snapshot} in {data_dir} not found.')
-            return None
-        except AssertionError:
-            # TODO add logger
-            print(f'WARNING: {data_key} {snapshot} have non-valid gaze point.')
-            return None
+            except FileNotFoundError:
+                # TODO add logger
+                if verbose:
+                    print(f'WARNING: {data_key} {snapshot} in {data_dir} not found.')
+                data[data_key] = None
+            except AssertionError:
+                if verbose:
+                    print(f'WARNING: {data_key} {snapshot} have non-valid gaze point.')
+                data[data_key] = None
+        return data
 
-    def read_snapshot(self, snapshot):
-        return self.read_frames(snapshot), self.read_data(snapshot)
+    def read_snapshot(self, snapshot, verbose):
+        return self.read_frames(snapshot), self.read_data(snapshot, verbose)
 
-    def snapshots_iterate(self, indices):
+    def snapshots_iterate(self, indices=None, verbose=0, progress_bar=False):
         """
         Dataset generator
         :param indices: indices of snapshots, according to BRS
+        :param verbose: 0 - nothing, 1 - warnings
         :return: yield tuple(frame, face_points, faces_rotations)
         """
-        for snapshot in [self.snapshots[i] for i in indices]:
-            snapshot_data = self.read_snapshot(snapshot)
-            if all(snapshot_data):
-                yield snapshot_data
-            else:
-                pass
+        if not progress_bar:
+            bar = lambda iterable: iterable
+        else:
+            bar = tqdm
+        if indices is None:
+            indices = range(len(self.snapshots))
+        for i in bar(indices):
+            snapshot_index = self.snapshots[i]
+            snapshot_data = self.read_snapshot(snapshot_index, verbose)
+            yield snapshot_data, snapshot_index
+            # if all(snapshot_data):
+            #     yield snapshot_data
+            # else:
+            #     pass

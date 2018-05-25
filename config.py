@@ -1,58 +1,54 @@
 INTRINSIC_PARAMS = {
     'CAMERAS': {
         'color': {
-            'matrix': [[1051.7, 0.,     957.6],
-                       [0.,     1051.7, 537.6],
-                       [0.,     0.,     1.   ]],
-            'distortion': [-0.0026, 0.1780, 0.0011, 0.0003],
+            'matrix': [
+                [1050.9, 0,  956.0],
+                [0,     1050.0, 534.8],
+                [0,     0,      1]
+            ],
+            'distortion': [0.038, -0.0388, 0.0010, 0.0004],
         },
         'basler': {
-            'matrix': [[1896.6, 0.,     654.8],
-                       [0.,     1897.9, 461.5],
-                       [0.,     0.,     1.   ]],
-            'distortion': [-0.6819, 0.3729, -0.0021, -0.0005],
+            'matrix': [
+                [ 3802.7,        0,         648.0],
+                [      0,   3804.0,         486.4],
+                [      0,        0,       1.0]
+            ],
+            'distortion': [-0.3508,   0.5343, -0.0008929,  -0.0004769],
         },
         'ir': {
-            'matrix': [[363.6643, 0.,       257.1285],
-                       [0.,       363.7357, 208.6171],
-                       [0.,       0.,       1.]],
-            'distortion': [0.1014, -0.2622, 0.0017, -0.0019],
+            'matrix': [
+                [365.7,         0,   256],
+                [       0,  365.7,   212],
+                [       0,         0,   1]
+            ],
+            'distortion': [-6.510e-3, 1.205e-3, 1.377e-4, 1.589e-4],
         },
         'web_cam': {
-            'matrix': [[363.6643, 0., 257.1285],
-                       [0., 363.7357, 208.6171],
-                       [0., 0., 1.]],
-            'distortion': [0.1014, -0.2622, 0.0017, -0.0019],
+            'matrix': [
+                [2265.4,   0,   1009.4],
+                [0,     2268.7, 811.5],
+                [0,     0,      1]
+            ],
+            'distortion': [-0.0276, 0.1141, 0.0000871, -0.0002941],
         }
     },
     'SCREENS': {
+        # 'screen': {
+        #     'resolution': (1920, 1080),
+        #     'diagonal': 23 * 0.0254,  # 23 inches in meters
+        #  },
         'wall': {
             'resolution': (1920, 1080),
-            'diagonal': 23 * 0.0254,  # 23 inches in meters
-         },
-        'screen': {
-            'resolution': (1920, 1080),
-            'diagonal': 3.0,  # 23 inches in meters
+            'diagonal': 1.8537,
         },
     }
 }
 
-CAM_DIRS = {
-    'color': 'cam_1',
-    'basler': 'cam_8',
-    'web_cam': 'cam_0',
-    'ir': 'cam_2'
-}
-
-DATA_DIRS = {
-    'face_poses': 'cam_6',
-    'gazes': 'cam_9',
-    'face_points': 'cam_7'
-}
 
 ORIGIN_CAM = 'ir'
 
-DATASET_PATH = r'C:\Users\Valik\Documents\GitHub\dataroot\RETNNA\BAS\1525974053\DataSource'
+DATASET_PATH = r'C:\Users\Valik\Documents\GitHub\dataroot\RETNNA\BAS\1527250535'
 
 PATH_TO_ESTIMATOR = './app/bin/estimator.h5'
 PATH_TO_FACE_MODEL = './app/bin/face_landmarks.dat'

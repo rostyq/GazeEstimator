@@ -1,10 +1,15 @@
+from os import path as Path
+import json
+import os.path
 from app.estimation import GazeNet
 from app.device.screen import Screen
 from app.device.camera import Camera
 from app.parser import ExperimentParser
+from app.estimation.actordetector import ActorDetector
 from app.frame import Frame
 from app.actor import Actor
 from app import *
+from tqdm import tqdm
 
 import socketserver
 import numpy as np
@@ -80,28 +85,58 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
         # just send back the same data, but upper-cased
         self.request.sendall("Data received!".encode())
 
+class Scene:
+    def __init__(self, origin_name, intrinsic_params, extrinsic_params):
+        params = {key: value for key, value in intrinsic_params['CAMERAS'].items() if key != origin_name}
+        self.origin = Camera(name=origin_name, cam_dict=intrinsic_params['CAMERAS'][origin_name])
 
-def construct_scene_objects(origin_name, intrinsic_params, extrinsic_params):
+        self.cams = {
+            name: Camera(
+                name=name,
+                cam_dict=cam_data,
+                extrinsic_matrix=(extrinsic_params[f'{name}_{self.origin.name}']),
+                origin=self.origin
+            ) for name, cam_data in params.items()
+        }
+        self.cams[origin_name] = self.origin
 
-    origin = Camera(name=origin_name, cam_dict=intrinsic_params['CAMERAS'].pop(origin_name))
+        self.screens = {
+            name: Screen(
+                name=name,
+                screen_dict=screen_data,
+                extrinsic_matrix=extrinsic_params[f'{name}_{self.origin.name}'],
+                origin=self.origin
+            ) for name, screen_data in intrinsic_params['SCREENS'].items()
+        }
 
-    cams = {
-        name: Camera(
-            name=name,
-            cam_dict=cam_data,
-            extrinsic_matrix=(extrinsic_params[f'{name}_{origin.name}']),
-            origin=origin
-        ) for name, cam_data in intrinsic_params['CAMERAS'].items()
-    }
-    cams[origin_name] = origin
+    def to_dict(self):
+        return {'screens':  {name: screen.to_dict() for name, screen in self.screens.items()},
+                'cams': {name: cam.to_dict() for name, cam in self.cams.items()}}
 
-    screens = {
-        name: Screen(
-            name=name,
-            screen_dict=screen_data,
-            extrinsic_matrix=extrinsic_params[f'{name}_{origin.name}'],
-            origin=origin
-        ) for name, screen_data in intrinsic_params['SCREENS'].items()
-    }
+def create_learning_dataset(save_path, parser, face_detector, scene, indices=None):
+    save_path = Path.join(save_path, 'normalized_data', parser.session_code)
+    if not os.path.exists(save_path):
+        os.makedirs(save_path, exist_ok=True)
 
-    return {'origin': origin, 'cameras': cams, 'screens': screens}
+    learning_data = {'dataset': [], 'scene': scene.to_dict()}
+    for (frames, data), index in parser.snapshots_iterate(indices=indices, progress_bar=True):
+        if data['gazes']:
+            frame_basler = frames['basler']
+            actors_basler = face_detector.detect_actors(frame_basler, scene.origin)
+            if len(actors_basler) == 0:
+                continue
+            actor_basler = actors_basler[0]
+            actor_basler.set_landmarks3d_gazes(data['gazes'][0], data['gazes'][1], scene.screens['wall'])
+
+            left_eye_frame, right_eye_frame = frame_basler.extract_eyes_from_actor(actor_basler,
+                                                                                   equalize_hist=True,
+                                                                                   to_grayscale=True)
+
+            cv2.imwrite(Path.join(save_path, f'{index}_left.png'), left_eye_frame)
+            cv2.imwrite(Path.join(save_path, f'{index}_right.png'), right_eye_frame)
+
+            learning_data['dataset'].append([actor_basler.to_learning_dataset(f'{index}_left.png', f'{index}_right.png')])
+
+    with open(Path.join(save_path, 'normalized_dataset.json'), mode='w') as outfile:
+        json.dump(learning_data, fp=outfile, indent=2)
+    print(f'Dataset saved to {save_path}')
