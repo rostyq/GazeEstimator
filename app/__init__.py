@@ -116,7 +116,7 @@ class Scene:
 def create_learning_dataset(save_path, parser, face_detector, scene, indices=None):
     save_path = Path.join(save_path, 'normalized_data', parser.session_code)
     if not os.path.exists(save_path):
-        os.mkdir(save_path)
+        os.makedirs(save_path, exist_ok=True)
 
     learning_data = {'dataset': [], 'scene': scene.to_dict()}
     for (frames, data), index in parser.snapshots_iterate(indices=indices, progress_bar=True):
@@ -139,3 +139,4 @@ def create_learning_dataset(save_path, parser, face_detector, scene, indices=Non
 
     with open(Path.join(save_path, 'normalized_dataset.json'), mode='w') as outfile:
         json.dump(learning_data, fp=outfile, indent=2)
+    print(f'Dataset saved to {save_path}')
