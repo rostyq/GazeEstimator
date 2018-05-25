@@ -1,6 +1,9 @@
 from config import *
-from app import construct_scene_objects
+from os import path
+from app import Scene
+from app import create_learning_dataset
 from app import ExperimentParser
+import sys
 from app import Actor
 from app import MyTCPHandler
 from app.estimation import ActorDetector
@@ -13,24 +16,18 @@ if __name__ == "__main__":
     face_detector = ActorDetector(path_to_face_model=PATH_TO_FACE_MODEL,
                                   path_to_face_points=PATH_TO_FACE_POINTS,
                                   factor=6)
+    if len(sys.argv) == 2:
+        DATASET_PATH = sys.argv[1]
 
     with open('./extrinsic_params.json', 'r') as f:
         extrinsic_params = json.load(f)
 
-    scene = construct_scene_objects(origin_name=ORIGIN_CAM,
-                                    intrinsic_params=INTRINSIC_PARAMS,
-                                    extrinsic_params=extrinsic_params)
+    scene = Scene(origin_name=ORIGIN_CAM, intrinsic_params=INTRINSIC_PARAMS, extrinsic_params=extrinsic_params)
 
-    origin = scene['origin']
-    cams = scene['cameras']
-    screens = scene['screens']
+    parser = ExperimentParser(session_code=path.split(DATASET_PATH)[-1])
+    parser.fit(DATASET_PATH, scene)
 
-    cams_dict = {cams[cam_name]: cam_dir for cam_name, cam_dir in CAM_DIRS.items()}
-    parser = ExperimentParser(cams_dict=cams_dict,
-                              data_dict=DATA_DIRS)
-    parser.fit(DATASET_PATH)
-
-    snapshots = [{'frames': frames, 'data': data} for frames, data in parser.snapshots_iterate(range(0, 10))]
+    create_learning_dataset('../', parser, face_detector, scene, indices=range(len(parser.snapshots)))
     # HOST, PORT = '127.0.0.1', 5055
     #
     # # Create the server, binding to localhost on port 9999

@@ -10,19 +10,19 @@ INTRINSIC_PARAMS = {
         },
         'basler': {
             'matrix': [
-                [ 3802.7,        0,         0],
-                [      0,   3804.0,         0],
-                [  646.0,    444.4,       1.0]
+                [ 3802.7,        0,         648.0],
+                [      0,   3804.0,         486.4],
+                [      0,        0,       1.0]
             ],
-            'distortion': [-0.6819, 0.3729, -0.0021, -0.0005],
+            'distortion': [-0.3508,   0.5343, -0.0008929,  -0.0004769],
         },
         'ir': {
             'matrix': [
-                [363.1938,         0,   258.8109],
-                [       0,  363.0246,   208.8607],
-                [       0,         0,          1]
+                [365.7,         0,   256],
+                [       0,  365.7,   212],
+                [       0,         0,   1]
             ],
-            'distortion': [0.0799, -0.1877, 0.0010, 0.0002],
+            'distortion': [-6.510e-3, 1.205e-3, 1.377e-4, 1.589e-4],
         },
         'web_cam': {
             'matrix': [
@@ -45,22 +45,10 @@ INTRINSIC_PARAMS = {
     }
 }
 
-CAM_DIRS = {
-    'color': 'cam_3',
-    'basler': 'cam_0',
-    'web_cam': 'cam_1',
-    'ir': 'cam_5'
-}
-
-DATA_DIRS = {
-    'face_poses': 'cam_8',
-    'gazes': 'cam_2',
-    'face_points': 'cam_9'
-}
 
 ORIGIN_CAM = 'ir'
 
-DATASET_PATH = r'C:\Users\Valik\Documents\GitHub\dataroot\RETNNA\BAS\1527098095\DataSource'
+DATASET_PATH = r'C:\Users\Valik\Documents\GitHub\dataroot\RETNNA\BAS\1527250535'
 
 PATH_TO_ESTIMATOR = './app/bin/estimator.h5'
 PATH_TO_FACE_MODEL = './app/bin/face_landmarks.dat'

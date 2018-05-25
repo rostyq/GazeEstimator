@@ -14,13 +14,15 @@ from numpy import tile
 
 class ActorDetector:
 
-    def __init__(self, path_to_face_model, path_to_face_points, factor):
+    def __init__(self, path_to_face_model, path_to_face_points, factor, chin_nose_distance=0.065):
         self.detector = get_frontal_face_detector()
         self.predictor = shape_predictor(path_to_face_model)
         self.factor = factor
-        self.eye_height = 70 * 0.0001
-        self.eye_width = 170 * 0.0001
-        self.model_points = loadmat(path_to_face_points)['model'] * array([1, -1, 1]) * 0.0001
+        self.model_points = loadmat(path_to_face_points)['model'] * array([-1, -1, 1])
+        scale = chin_nose_distance / self.model_points[1, 1]
+        self.model_points = self.model_points * scale
+        self.eye_height = 70 * scale
+        self.eye_width = 150 * scale
         self.landmarks_to_model = {31: 0,  # Nose tip
                                    9: 1,  # Chin
                                    37: 2,  # Left eye left corner
@@ -60,7 +62,7 @@ class ActorDetector:
     def _vectors_from_model_to_origin(self, vectors, rotation_vector, translation_vector, camera):
         vectors = vectors.reshape((3, -1))
         rotation_matrix = Rodrigues(rotation_vector)[0]
-        vectors_camera_space = rotation_matrix @ vectors + translation_vector
+        vectors_camera_space = (rotation_matrix) @ vectors + translation_vector
         return camera.vectors_to_origin(vectors_camera_space)
 
     def _eye_rectagle(self, eye_model_space, left=True):
@@ -68,9 +70,9 @@ class ActorDetector:
         eye_rectangle_model_space[0:2, 1] = eye_rectangle_model_space[0:2, 1] - self.eye_height
         eye_rectangle_model_space[2:4, 1] = eye_rectangle_model_space[2:4, 1] + self.eye_height
         if left:
-            eye_rectangle_model_space[1:3, 0] = eye_rectangle_model_space[1:3, 0] + self.eye_width
-        else:
             eye_rectangle_model_space[1:3, 0] = eye_rectangle_model_space[1:3, 0] - self.eye_width
+        else:
+            eye_rectangle_model_space[1:3, 0] = eye_rectangle_model_space[1:3, 0] + self.eye_width
         return eye_rectangle_model_space.T
 
     def detect_actors(self, frame, origin):
@@ -90,8 +92,8 @@ class ActorDetector:
                                                                     flags=SOLVEPNP_ITERATIVE)
             left_eye_model_space, right_eye_model_space = self.model_points[2], self.model_points[3]
             nose_model_space, chin_model_space = self.model_points[0], self.model_points[1]
-            left_eye_center_model_space = left_eye_model_space + array([self.eye_width/2, 0., 0.])
-            right_eye_center_model_space = right_eye_model_space + array([-self.eye_width/2, 0., 0.])
+            left_eye_center_model_space = left_eye_model_space + array([-self.eye_width/2, 0., 0.])
+            right_eye_center_model_space = right_eye_model_space + array([self.eye_width/2, 0., 0.])
 
             left_eye_rectangle_model_space = self._eye_rectagle(left_eye_model_space, left=True)
             right_eye_rectangle_model_space = self._eye_rectagle(right_eye_model_space, left=False)

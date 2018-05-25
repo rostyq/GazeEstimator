@@ -71,12 +71,11 @@ class Screen(SceneObj):
         else:
             self.pixel_width = None
 
-    # def calc_mpp(self):
-    #     """
-    #     mpp - Meters per pixels
-    #     :return:
-    #     """
-    #     self.mpp = self.diagonal / sqrt(self.resolution[0]**2+self.resolution[1]**2)
+    def to_dict(self):
+        result = super().to_dict()
+        result['resolution'] = self.resolution
+        result['diagonal'] = self.diagonal
+        return result
 
     def get_point_in_pixels(self, x, y):
         if not self.mpp:
@@ -93,20 +92,3 @@ class Screen(SceneObj):
         else:
             pixel_x, pixel_y = None, None
         return pixel_x, pixel_y
-
-if __name__ == '__main__':
-    print('Plane intersection example:\n'
-          'Plane = ((2,0,0), (0,-4,0), (0,0,4))\n'
-          'Line = ((1, 3, -1), (3,4,2))\n'
-          'Right answer: [3, 4, 2]\n')
-    print(plane_line_intersection(((1, 3, -1), (3,4,2)), ((2,0,0), (0,-4,0), (0,0,4))))
-
-    print('Point in pixels:\n'
-          'height = 100 mm\n'
-          'width = 200 mm\n'
-          'resolution = (1000, 2000)\n'
-          'point = (10.123, 20,123)\n')
-
-    new_screen = Screen('Dell', origin=None, matrix=None, distortion=None,
-                 diagonal=sqrt(5) * 100, resolution=(1000, 2000), height=100, width=200)
-    print(new_screen.point_in_pixels(*(10.123, 20.123)))

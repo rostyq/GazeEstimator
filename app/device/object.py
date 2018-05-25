@@ -22,15 +22,12 @@ class SceneObj:
             extrinsic_matrix = array(extrinsic_matrix)
             self.translation = (extrinsic_matrix[:3, 3] / self.to_m[scale]).reshape(3, 1)
             self.rotation = (Rodrigues(extrinsic_matrix[:3, :3])[0]).reshape(3, 1)
-        self.rotation_matrix = Rodrigues(self.rotation)[0]
 
     def get_rotation_matrix(self):
-        # if self.rotation_matrix is None:
-        #     self.rotation_matrix = Rodrigues(self.rotation)[0]
-        return self.rotation_matrix
+        return Rodrigues(self.rotation)[0]
 
-    def get_extrinsic(self):
-        return {'rotation': self.rotation, 'translation': self.translation}
+    def to_dict(self):
+        return {'rotation': self.rotation.tolist(), 'translation': self.translation.tolist()}
 
     def restore_extrinsic_matrix(self):
         return vstack(

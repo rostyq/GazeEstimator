@@ -4,22 +4,22 @@ from cv2 import projectPoints
 from cv2 import circle
 from cv2 import findHomography
 from cv2 import warpPerspective
+from cv2 import cvtColor, COLOR_RGB2GRAY
+from cv2 import equalizeHist
+
 
 class Frame:
-
-    flip_y_array = array([[1, -1, 1]])
-
     def __init__(self, camera, image):
         self.camera = camera
         self.image = image.astype('uint8')
 
-    def draw_points(self, points, radius=10, color=(255, 0, 0)):
+    def draw_points(self, points, radius=1, color=(0, 0, 255)):
         for point in points:
             circle(self.image, tuple(point.astype(int)), radius, color, -1)
         return self
 
     def get_projected_coordinates(self, vectors):
-        return projectPoints(vectors, #*self.flip_y_array,
+        return projectPoints(vectors,
                              self.camera.rotation,
                              self.camera.translation,
                              self.camera.matrix,
@@ -38,7 +38,7 @@ class Frame:
         """
         return self.image[coord[0]:coord[0]+shape[0], coord[1]:coord[1]+shape[1]]
 
-    def extract_eyes_from_actor(self, actor, resolution=(60, 36)):
+    def extract_eyes_from_actor(self, actor, resolution=(60, 36), equalize_hist=False, to_grayscale=False):
         # eye planes
         left_norm_image_plane = array([[resolution[0], 0.0          ],
                                         [0.0,           0.0          ],
@@ -56,5 +56,11 @@ class Frame:
 
         homography, status = findHomography(right_eye_projection, right_norm_image_plane)
         right_eye_frame = warpPerspective(self.image, homography, resolution)
+
+        if to_grayscale:
+            left_eye_frame, right_eye_frame = cvtColor(left_eye_frame, COLOR_RGB2GRAY), \
+                                              cvtColor(right_eye_frame, COLOR_RGB2GRAY)
+        if equalize_hist:
+            left_eye_frame, right_eye_frame = equalizeHist(left_eye_frame), equalizeHist(right_eye_frame)
 
         return left_eye_frame, right_eye_frame

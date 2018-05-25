@@ -1,6 +1,7 @@
 from app.device import SceneObj
 from numpy import cross
 from numpy import array
+from numpy.linalg import norm
 from app.parser import quaternion_to_angle_axis, face_point_to_array
 
 class Actor(SceneObj):
@@ -12,22 +13,39 @@ class Actor(SceneObj):
             'eyes': {
                 'left': {
                     'rectangle': None,
-                    'center': None
+                    'center': None,
+                    'gaze': None
                 },
                 'right': {
                     'rectangle': None,
-                    'center': None
+                    'center': None,
+                    'gaze': None
                 }
             },
             'nose': None,
             'chin': None
         }
 
+    def to_learning_dataset(self, img_left_name, img_rigth_name):
+        return {
+            'eyes': {
+                'left': {
+                    'gaze_norm': (self.landmarks3D['eyes']['left']['gaze']/norm(self.landmarks3D['eyes']['left']['gaze'])).tolist(),
+                    'image': img_left_name
+                },
+                'right': {
+                    'gaze_norm': (self.landmarks3D['eyes']['left']['gaze']/norm(self.landmarks3D['eyes']['left']['gaze'])).tolist(),
+                    'image': img_rigth_name,
+                }
+            },
+            'rotation_norm': (self.get_norm_vector_to_face()/norm(self.get_norm_vector_to_face())).tolist()
+        }
+
     def set_landmarks3d(self, face_points):
         LeyeO = array(face_points[469])
         LeyeI = array(face_points[210])
-        ReyeO = array(face_points[469])
-        ReyeI = array(face_points[210])
+        ReyeO = array(face_points[1117])
+        ReyeI = array(face_points[843])
 
         self.landmarks3D['eyes']['left']['rectangle'] = array([face_points[i] for i in [1080, 201, 289, 151]])
         self.landmarks3D['eyes']['right']['rectangle'] = array([face_points[i] for i in [1084, 847, 947, 772]])
@@ -51,6 +69,12 @@ class Actor(SceneObj):
         self.landmarks3D['nose'] = nose
         self.landmarks3D['chin'] = chin
         return self
+
+    def set_landmarks3d_gazes(self, x, y, screen):
+        gaze_point_origin_space = screen.point_to_origin(x, y).reshape(3)
+        self.landmarks3D['eyes']['left']['gaze'] = gaze_point_origin_space - self.landmarks3D['eyes']['left']['center']
+        self.landmarks3D['eyes']['right']['gaze'] = gaze_point_origin_space - self.landmarks3D['eyes']['right']['center']
+
 
     # def set_landmarks2d(self, shape_from_dlib):
     #     self.landmarks2D = shape_from_dlib
