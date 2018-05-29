@@ -62,7 +62,7 @@ class ExperimentParser:
                 'ir': mapping[' Kinect.Infrared']
             }
             data_dict = {
-                # 'face_poses': mapping[' Kinect.Face'],
+                'face_poses': mapping[' Kinect.Face'],
                 'gazes': mapping[' Gazepoint'],
                 'face_points': mapping[' Kinect.FaceVertices']
             }

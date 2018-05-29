@@ -7,6 +7,9 @@ from cv2 import warpPerspective
 from cv2 import cvtColor, COLOR_RGB2GRAY
 from cv2 import equalizeHist
 from cv2 import putText, FONT_HERSHEY_SIMPLEX
+from cv2 import Rodrigues
+from numpy.linalg import inv
+from cv2 import line
 
 
 class Frame:
@@ -22,18 +25,29 @@ class Frame:
     @staticmethod
     def draw_labels(image, labels, positions, size=4, color=(255, 0, 0)):
         for label, position in zip(labels, positions):
-            print(tuple(position.astype(int)))
             putText(image, label, tuple(position.astype(int)), FONT_HERSHEY_SIMPLEX, size, color, 4, lineType=3)
+
+    @staticmethod
+    def draw_lines(image, start_points, end_points, color=(255, 0, 0), thickness=2):
+        for start, end in zip(start_points, end_points):
+            line(image, tuple(start), tuple(end), color, thickness, lineType=2)
 
     def get_projected_coordinates(self, vectors):
         return projectPoints(vectors,
-                             self.camera.rotation,
-                             self.camera.translation,
+                             -self.camera.rotation,
+                             -(inv(self.camera.get_rotation_matrix()) @ self.camera.translation),
                              self.camera.matrix,
                              self.camera.distortion)[0].reshape(-1, 2)
 
     def project_vectors(self, vectors, **kwargs):
-        self.draw_points(self.image, self.get_projected_coordinates(vectors).astype(int), **kwargs)
+        self.draw_points(self.image, self.get_projected_coordinates(vectors.reshape((-1, 3))).astype(int), **kwargs)
+        return self
+
+    def project_lines(self, start_points, end_points, **kwargs):
+        self.draw_lines(self.image,
+                        self.get_projected_coordinates(start_points.reshape((-1, 3))).astype(int),
+                        self.get_projected_coordinates(end_points.reshape((-1, 3))).astype(int),
+                        **kwargs)
         return self
 
     def extract_rectangle(self, coord, shape):

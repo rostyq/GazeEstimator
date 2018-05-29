@@ -1,5 +1,6 @@
 from app.actor import Actor
 from dlib import shape_predictor
+from dlib import get_frontal_face_detector
 from dlib import rectangle as DlibRectangle
 from dlib import rectangles as DlibRectangles
 from scipy.io import loadmat
@@ -89,9 +90,10 @@ class ActorDetector:
 
     def detect_actors(self, frame, origin):
         image_for_detector = self.downscale(self.to_grayscale(frame.image))
-        rectangles = self.cvface2dlibrects(self.detector(image_for_detector,
-                                                         scaleFactor=self.scale,
-                                                         minNeighbors=self.minNeighbors))
+        rectangles = self.detector(image_for_detector)
+        # rectangles = self.cvface2dlibrects(self.detector(image_for_detector,
+        #                                                  scaleFactor=self.scale,
+        #                                                  minNeighbors=self.minNeighbors))
 
         landmarks2D = [self.rescale_coordinates(self.shape_to_np(self.predictor(image_for_detector, rectangle)))
                        for rectangle in rectangles]

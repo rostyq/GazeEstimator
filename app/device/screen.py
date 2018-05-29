@@ -85,13 +85,13 @@ class Screen(SceneObj):
         return array([int(coord*axis) for coord, axis in zip((x, y), self.resolution)])
 
     def point_to_origin(self, x, y):
-        point = array([coord*axis*self.mpp for coord, axis in zip((x, y), self.resolution)]+[0.0]).reshape((3, 1))
+        point = array([coord*axis*self.mpp for coord, axis in zip((y, x), self.resolution)]+[0.0]).reshape((3, 1))
         return self.vectors_to_origin(point)
 
     def get_intersection_point_in_pixels(self, line_points_origin):
         intersection_origin = self.get_intersection_point_origin(line_points_origin)
         intersection_self = self.vectors_to_self(intersection_origin).reshape(3)
-        return intersection_self[0:2]/self.mpp
+        return (intersection_self[1]/self.mpp, intersection_self[0]/self.mpp)
 
     def get_intersection_point_origin(self, line_points_origin):
         wall_points_origin = array([self.point_to_origin(0, 0), self.point_to_origin(1, 1), self.point_to_origin(1, 0)])
@@ -99,7 +99,7 @@ class Screen(SceneObj):
         return intersection_origin
 
     def generate_image_with_circles(self, points, padding=10, labels=None):
-        image = zeros((self.resolution[1], self.resolution[0], 3), dtype='uint8')
+        image = zeros((self.resolution[0], self.resolution[1], 3), dtype='uint8')
         image = copyMakeBorder(image, padding, padding, padding, padding, BORDER_CONSTANT)
         image[:, padding:padding+3], \
         image[:, -3-padding:-padding], \

@@ -39,7 +39,7 @@ INTRINSIC_PARAMS = {
         #     'diagonal': 23 * 0.0254,  # 23 inches in meters
         #  },
         'wall': {
-            'resolution': (1920, 1080),
+            'resolution': (1080, 1920),
             'diagonal': 1.8537,
         },
     }

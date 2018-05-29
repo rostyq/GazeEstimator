@@ -51,9 +51,9 @@ class SceneObj:
     
     # Functions below are wrong! 
     # Use extrinsic matrices instead separated rotation and translation vectors!
-    def vectors_to_origin(self, vectors):
+    def vectors_to_self(self, vectors):
         return inv(self.get_rotation_matrix()) @ (vectors.reshape(3, -1) - self.translation.reshape(3, 1))
 
-    def vectors_to_self(self, vectors):
+    def vectors_to_origin(self, vectors):
         return self.get_rotation_matrix() @ vectors.reshape(3, -1) + self.translation.reshape(3, 1)
 
