@@ -52,7 +52,7 @@ class GazeNet:
                                 compile=True)
         return self
 
-    def train(self, input_train, gazes_train, epochs, batch_size, create_new, path_to_save, validation_data=None, **kwargs):
+    def train(self, images, poses, gazes, epochs, batch_size, path_to_save, create_new=False, val_split=0.8, **kwargs):
         if create_new:
             self.model = create_model(**kwargs)
         callbacks = create_callbacks(path_to_save)
@@ -60,15 +60,21 @@ class GazeNet:
         if not os.path.exists(path_to_save):
             os.makedirs(path_to_save)
 
-        self.model.fit(x=input_train,
-                       y=gazes_train,
-                       batch_size=batch_size,
-                       verbose=1,
-                       epochs=epochs,
-                       validation_data=validation_data,
-                       callbacks=callbacks)
+        split = int(images.shape[0] * val_split)
+        input_train = prepare(images[:split, :], poses[:split, :])
+        gazes_train = gaze3Dto2D(gazes[:split, :])
+        validation_data = (prepare(images[split:, :], poses[split:, :]), gaze3Dto2D(gazes[split:, :]))
 
-        self.model.save(f'{path_to_save}/model_last.h5')
+        try:
+            self.model.fit(x=input_train,
+                           y=gazes_train,
+                           batch_size=batch_size,
+                           verbose=1,
+                           epochs=epochs,
+                           validation_data=validation_data,
+                           callbacks=callbacks)
+        finally:
+            self.model.save(f'{path_to_save}/model_last.h5')
         return self
 
     def score(self, input_data, gazes, batch_size):

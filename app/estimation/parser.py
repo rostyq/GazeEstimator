@@ -1,6 +1,7 @@
 from json import load
 from cv2 import imread
-
+from cv2 import cvtColor
+from cv2 import COLOR_BGR2GRAY
 
 def get_item(data: dict, path_list: list):
     key = path_list.pop()
@@ -140,7 +141,7 @@ class DatasetParser:
                 eye=eye
             )
         )
-        image = imread(path_to_image, **kwargs)
+        image = cvtColor(imread(path_to_image, **kwargs), COLOR_BGR2GRAY)
         if image is None:
             raise Exception(f'Image not found in {path_to_image}')
         else:
@@ -210,7 +211,7 @@ class DatasetParser:
         gazes : list[list[float, float, float]]
         """
         self._check_eye(eye)
-        return [self.get_pose(index) for index in self._check_indices(indices)]
+        return [self.get_gaze(index, eye=eye) for index in self._check_indices(indices)]
 
     def get_images_array(self, eye, indices=None, **kwargs):
         """
