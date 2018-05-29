@@ -3,6 +3,7 @@ from os import listdir
 import json
 import bson
 from cv2 import imread
+from cv2 import flip
 from app.frame import Frame
 from numpy import array
 from numpy import sqrt
@@ -12,7 +13,7 @@ from tqdm import tqdm
 
 
 def face_point_to_array(dct):
-    return array([dct['X'], dct['Y'], dct['Z']]).reshape(3) * array([1, -1, 1])
+    return array([dct['X'], dct['Y'], dct['Z']]).reshape(3) * array([-1, -1, 1])
 
 
 def quaternion_to_angle_axis(quaternion):
@@ -61,7 +62,7 @@ class ExperimentParser:
                 'ir': mapping[' Kinect.Infrared']
             }
             data_dict = {
-                'face_poses': mapping[' Kinect.Face'],
+                # 'face_poses': mapping[' Kinect.Face'],
                 'gazes': mapping[' Gazepoint'],
                 'face_points': mapping[' Kinect.FaceVertices']
             }
@@ -70,7 +71,7 @@ class ExperimentParser:
     def read_frame(self, cam, snapshot):
         frame_file = Path.join(self.path_to_dataset, self.cams_dict[cam], snapshot + '.png')
         if Path.isfile(frame_file):
-            return Frame(cam, imread(frame_file))
+            return Frame(cam, flip(imread(frame_file), 1))
         else:
             return None
 

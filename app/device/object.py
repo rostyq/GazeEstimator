@@ -55,5 +55,5 @@ class SceneObj:
         return inv(self.get_rotation_matrix()) @ (vectors.reshape(3, -1) - self.translation.reshape(3, 1))
 
     def vectors_to_self(self, vectors):
-        return self.get_rotation_matrix() @ (vectors.reshape(3, -1) + self.translation.reshape(3, 1))
+        return self.get_rotation_matrix() @ vectors.reshape(3, -1) + self.translation.reshape(3, 1)
 

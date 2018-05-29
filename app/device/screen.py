@@ -2,7 +2,10 @@ from .object import SceneObj
 from numpy import array
 from numpy import sqrt
 from numpy import cross, dot
+from numpy import zeros
 from numpy.linalg import solve
+from cv2 import copyMakeBorder, BORDER_CONSTANT
+from app.frame import Frame
 
 def plane_line_intersection(line_points, plane_points):
     ''' Compute intersection point of plane and lineself.
@@ -53,6 +56,7 @@ def plane_line_intersection(line_points, plane_points):
     # Compute intersection point.
     return solve(A, B)
 
+
 class Screen(SceneObj):
 
     def __init__(self, name, screen_dict, extrinsic_matrix, origin=None, height=None, width=None):
@@ -78,17 +82,30 @@ class Screen(SceneObj):
         return result
 
     def get_point_in_pixels(self, x, y):
-        if not self.mpp:
-            self.calc_mpp()
-        return array([int(coord*axis*self.mpp) for coord, axis in zip((x, y), self.resolution)])
+        return array([int(coord*axis) for coord, axis in zip((x, y), self.resolution)])
 
     def point_to_origin(self, x, y):
         point = array([coord*axis*self.mpp for coord, axis in zip((x, y), self.resolution)]+[0.0]).reshape((3, 1))
-        return self.get_rotation_matrix() @ point - self.translation
+        return self.vectors_to_origin(point)
 
-    def point_in_pixels(self, x, y):
-        if self.width is not None and self.height is not None:
-            pixel_x, pixel_y = round(x / self.pixel_height), round(y/ self.pixel_width)
-        else:
-            pixel_x, pixel_y = None, None
-        return pixel_x, pixel_y
+    def get_intersection_point_in_pixels(self, line_points_origin):
+        intersection_origin = self.get_intersection_point_origin(line_points_origin)
+        intersection_self = self.vectors_to_self(intersection_origin).reshape(3)
+        return intersection_self[0:2]/self.mpp
+
+    def get_intersection_point_origin(self, line_points_origin):
+        wall_points_origin = array([self.point_to_origin(0, 0), self.point_to_origin(1, 1), self.point_to_origin(1, 0)])
+        intersection_origin = plane_line_intersection(line_points_origin, wall_points_origin)
+        return intersection_origin
+
+    def generate_image_with_circles(self, points, padding=10, labels=None):
+        image = zeros((self.resolution[1], self.resolution[0], 3), dtype='uint8')
+        image = copyMakeBorder(image, padding, padding, padding, padding, BORDER_CONSTANT)
+        image[:, padding:padding+3], \
+        image[:, -3-padding:-padding], \
+        image[padding:padding+3, :], \
+        image[-3-padding:-padding, :] = [255] * 4
+        Frame.draw_points(image, points+padding, radius=40)
+        if labels:
+            Frame.draw_labels(image, labels, points+padding)
+        return image

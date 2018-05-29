@@ -129,6 +129,7 @@ def create_learning_dataset(save_path, parser, face_detector, scene, indices=Non
             actor_basler.set_landmarks3d_gazes(data['gazes'][0], data['gazes'][1], scene.screens['wall'])
 
             left_eye_frame, right_eye_frame = frame_basler.extract_eyes_from_actor(actor_basler,
+                                                                                   resolution=(60, 36),
                                                                                    equalize_hist=True,
                                                                                    to_grayscale=True)
 
@@ -139,4 +140,4 @@ def create_learning_dataset(save_path, parser, face_detector, scene, indices=Non
 
     with open(Path.join(save_path, 'normalized_dataset.json'), mode='w') as outfile:
         json.dump(learning_data, fp=outfile, indent=2)
-    print(f'Dataset saved to {save_path}')
+    print(f"Dataset saved to {save_path}. Number of useful snapshots: {len(learning_data['dataset'])}")

@@ -28,7 +28,7 @@ if __name__ == "__main__":
     parser = ExperimentParser(session_code=path.split(DATASET_PATH)[-1])
     parser.fit(DATASET_PATH, scene)
 
-    create_learning_dataset('../', parser, face_detector, scene, indices=range(10))
+    create_learning_dataset('../', parser, face_detector, scene, indices=range(len(parser.snapshots)))
     # HOST, PORT = '127.0.0.1', 5055
     #
     # # Create the server, binding to localhost on port 9999
