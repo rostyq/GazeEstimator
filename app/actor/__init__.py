@@ -31,11 +31,13 @@ class Actor(SceneObj):
             'eyes': {
                 'left': {
                     'gaze_norm': (self.landmarks3D['eyes']['left']['gaze']/norm(self.landmarks3D['eyes']['left']['gaze'])).tolist(),
-                    'image': img_left_name
+                    'image': img_left_name,
+                    'center': self.landmarks3D['eyes']['left']['center'].tolist()
                 },
                 'right': {
-                    'gaze_norm': (self.landmarks3D['eyes']['left']['gaze']/norm(self.landmarks3D['eyes']['left']['gaze'])).tolist(),
+                    'gaze_norm': (self.landmarks3D['eyes']['right']['gaze']/norm(self.landmarks3D['eyes']['right']['gaze'])).tolist(),
                     'image': img_rigth_name,
+                    'center': self.landmarks3D['eyes']['right']['center'].tolist()
                 }
             },
             'rotation_norm': (self.get_norm_vector_to_face()/norm(self.get_norm_vector_to_face())).tolist()

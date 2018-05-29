@@ -1,5 +1,6 @@
 from app.actor import Actor
 from dlib import shape_predictor
+from dlib import get_frontal_face_detector
 from dlib import rectangle as DlibRectangle
 from dlib import rectangles as DlibRectangles
 from scipy.io import loadmat
@@ -28,14 +29,14 @@ class ActorDetector:
         self.model_points = loadmat(path_to_face_points)['model'] * array([-1, -1, 1])
         scale = chin_nose_distance / self.model_points[1, 1]
         self.model_points = self.model_points * scale
-        self.eye_height = 70 * scale
-        self.eye_width = 150 * scale
+        self.eye_height = 60 * scale
+        self.eye_width = 160 * scale
         self.landmarks_to_model = {31: 0,  # Nose tip
                                    9: 1,  # Chin
-                                   37: 2,  # Left eye left corner
-                                   46: 3,  # Right eye right corner
-                                   49: 4,  # Left Mouth corner
-                                   55: 5  # Right mouth corner
+                                   37: 2,  # Right eye right corner
+                                   46: 3,  # Left eye left corner
+                                   49: 4,  # Right mouth corner
+                                   55: 5  # Left Mouth corner
                                    }
 
     def rescale_coordinates(self, coords):
@@ -77,11 +78,11 @@ class ActorDetector:
         vectors_camera_space = (rotation_matrix) @ vectors + translation_vector
         return camera.vectors_to_origin(vectors_camera_space)
 
-    def _eye_rectagle(self, eye_model_space, left=True):
+    def _eye_rectagle(self, eye_model_space, right=True):
         eye_rectangle_model_space = tile(eye_model_space, (4, 1))
         eye_rectangle_model_space[0:2, 1] = eye_rectangle_model_space[0:2, 1] - self.eye_height
         eye_rectangle_model_space[2:4, 1] = eye_rectangle_model_space[2:4, 1] + self.eye_height
-        if left:
+        if right:
             eye_rectangle_model_space[1:3, 0] = eye_rectangle_model_space[1:3, 0] - self.eye_width
         else:
             eye_rectangle_model_space[1:3, 0] = eye_rectangle_model_space[1:3, 0] + self.eye_width
@@ -89,9 +90,10 @@ class ActorDetector:
 
     def detect_actors(self, frame, origin):
         image_for_detector = self.downscale(self.to_grayscale(frame.image))
-        rectangles = self.cvface2dlibrects(self.detector(image_for_detector,
-                                                         scaleFactor=self.scale,
-                                                         minNeighbors=self.minNeighbors))
+        rectangles = self.detector(image_for_detector)
+        # rectangles = self.cvface2dlibrects(self.detector(image_for_detector,
+        #                                                  scaleFactor=self.scale,
+        #                                                  minNeighbors=self.minNeighbors))
 
         landmarks2D = [self.rescale_coordinates(self.shape_to_np(self.predictor(image_for_detector, rectangle)))
                        for rectangle in rectangles]
@@ -105,13 +107,13 @@ class ActorDetector:
                                                                     frame.camera.matrix,
                                                                     frame.camera.distortion,
                                                                     flags=SOLVEPNP_ITERATIVE)
-            left_eye_model_space, right_eye_model_space = self.model_points[2], self.model_points[3]
+            left_eye_model_space, right_eye_model_space = self.model_points[3], self.model_points[2]
             nose_model_space, chin_model_space = self.model_points[0], self.model_points[1]
-            left_eye_center_model_space = left_eye_model_space + array([-self.eye_width/2, 0., 0.])
-            right_eye_center_model_space = right_eye_model_space + array([self.eye_width/2, 0., 0.])
+            left_eye_center_model_space = left_eye_model_space + array([self.eye_width/2, 0., 0.])
+            right_eye_center_model_space = right_eye_model_space + array([-self.eye_width/2, 0., 0.])
 
-            left_eye_rectangle_model_space = self._eye_rectagle(left_eye_model_space, left=True)
-            right_eye_rectangle_model_space = self._eye_rectagle(right_eye_model_space, left=False)
+            left_eye_rectangle_model_space = self._eye_rectagle(left_eye_model_space, right=False)
+            right_eye_rectangle_model_space = self._eye_rectagle(right_eye_model_space, right=True)
 
             left_eye_rectangle_origin_space = self._vectors_from_model_to_origin(left_eye_rectangle_model_space,
                                                                                  rotation_vector,

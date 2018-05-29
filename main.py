@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
     face_detector = ActorDetector(path_to_face_model=PATH_TO_FACE_MODEL,
                                   path_to_face_points=PATH_TO_FACE_POINTS,
-                                  path_to_hc_model=PATH_TO_HAARCASCADE_MODEL,
+                                  # path_to_hc_model=PATH_TO_HAARCASCADE_MODEL,
                                   factor=6)
     if len(sys.argv) == 2:
         DATASET_PATH = sys.argv[1]
@@ -28,7 +28,7 @@ if __name__ == "__main__":
     parser = ExperimentParser(session_code=path.split(DATASET_PATH)[-1])
     parser.fit(DATASET_PATH, scene)
 
-    create_learning_dataset('../', parser, face_detector, scene, indices=range(10))
+    create_learning_dataset('../', parser, face_detector, scene, indices=range(len(parser.snapshots)))
     # HOST, PORT = '127.0.0.1', 5055
     #
     # # Create the server, binding to localhost on port 9999
