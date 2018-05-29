@@ -2,13 +2,10 @@ from keras.layers import Input
 from keras.layers import Dense
 from keras.layers import Concatenate
 from keras.layers import Flatten
-from keras.layers import Dropout
-from keras.layers import Lambda
 from keras.layers.convolutional import Conv2D
 from keras.layers.pooling import MaxPool2D
 
 from keras.initializers import RandomNormal
-from keras.initializers import glorot_normal
 from keras.initializers import glorot_uniform
 
 from keras.regularizers import l2
@@ -34,7 +31,7 @@ if debug:
 else:
     pass
 
-# tensorflow functions
+
 def calc_angle(angles1, angles2):
 
     def to_vector(angle):
@@ -150,7 +147,7 @@ def create_callbacks(path_to_save):
     checkpoint = ModelCheckpoint(
         path_to_save+'/model_{epoch}_{val_loss:.4f}.h5',
         monitor='val_loss',
-        period=10
+        period=100
         )
     reduce_lr = ReduceLROnPlateau(
         monitor='val_loss',
