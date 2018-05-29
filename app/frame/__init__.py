@@ -23,8 +23,10 @@ class Frame:
             circle(image, tuple(point.astype(int)), radius, color, -1)
 
     @staticmethod
-    def draw_labels(image, labels, positions, size=4, color=(255, 0, 0)):
-        for label, position in zip(labels, positions):
+    def draw_labels(image, labels, positions, colors, size=4, default_color=(255, 0, 0)):
+        for label, position, color in zip(labels, positions, colors):
+            if color is None:
+                color = default_color
             putText(image, label, tuple(position.astype(int)), FONT_HERSHEY_SIMPLEX, size, color, 4, lineType=3)
 
     @staticmethod

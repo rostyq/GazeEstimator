@@ -98,7 +98,7 @@ class Screen(SceneObj):
         intersection_origin = plane_line_intersection(line_points_origin, wall_points_origin)
         return intersection_origin
 
-    def generate_image_with_circles(self, points, padding=10, labels=None):
+    def generate_image_with_circles(self, points, padding=10, labels=None, colors=None):
         image = zeros((self.resolution[0], self.resolution[1], 3), dtype='uint8')
         image = copyMakeBorder(image, padding, padding, padding, padding, BORDER_CONSTANT)
         image[:, padding:padding+3], \
@@ -107,5 +107,5 @@ class Screen(SceneObj):
         image[-3-padding:-padding, :] = [255] * 4
         Frame.draw_points(image, points+padding, radius=40)
         if labels:
-            Frame.draw_labels(image, labels, points+padding)
+            Frame.draw_labels(image, labels, points+padding, colors)
         return image
