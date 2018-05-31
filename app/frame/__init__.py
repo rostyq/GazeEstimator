@@ -18,7 +18,7 @@ class Frame:
         self.image = image.astype('uint8')
 
     @staticmethod
-    def draw_points(image, points, radius=2, color=(255, 0, 0)):
+    def draw_points(image, points, radius=4, color=(255, 0, 0)):
         for point in points:
             circle(image, tuple(point.astype(int)), radius, color, -1)
 

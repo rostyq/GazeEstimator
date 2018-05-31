@@ -113,6 +113,7 @@ class Scene:
         return {'screens':  {name: screen.to_dict() for name, screen in self.screens.items()},
                 'cams': {name: cam.to_dict() for name, cam in self.cams.items()}}
 
+
 def create_learning_dataset(save_path, parser, face_detector, scene, indices=None):
     save_path = Path.join(save_path, 'normalized_data', parser.session_code)
     if not os.path.exists(save_path):
@@ -126,7 +127,7 @@ def create_learning_dataset(save_path, parser, face_detector, scene, indices=Non
             if len(actors_basler) == 0:
                 continue
             actor_basler = actors_basler[0]
-            actor_basler.set_landmarks3d_gazes(data['gazes'][0], data['gazes'][1], scene.screens['wall'])
+            actor_basler.set_landmarks3d_gazes(*data['gazes'], scene.screens['wall'])
 
             left_eye_frame, right_eye_frame = frame_basler.extract_eyes_from_actor(actor_basler,
                                                                                    resolution=(60, 36),

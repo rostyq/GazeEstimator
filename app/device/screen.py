@@ -3,6 +3,7 @@ from numpy import array
 from numpy import sqrt
 from numpy import cross, dot
 from numpy import zeros
+from numpy import uint8
 from numpy.linalg import solve
 from cv2 import copyMakeBorder, BORDER_CONSTANT
 from app.frame import Frame
@@ -99,7 +100,7 @@ class Screen(SceneObj):
         return intersection_origin
 
     def generate_image_with_circles(self, points, padding=10, labels=None, colors=None):
-        image = zeros((self.resolution[0], self.resolution[1], 3), dtype='uint8')
+        image = zeros((self.resolution[0], self.resolution[1], 3), dtype=uint8)
         image = copyMakeBorder(image, padding, padding, padding, padding, BORDER_CONSTANT)
         image[:, padding:padding+3], \
         image[:, -3-padding:-padding], \

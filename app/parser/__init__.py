@@ -56,22 +56,26 @@ class ExperimentParser:
             mapping = mapping.read().split(sep='\n')
             mapping = {item.split(sep=';')[1]: item.split(sep=';')[0] for item in mapping[:-1]}
             cams_dict = {
-                'color': mapping[' Kinect.Color'],
+                # 'color': mapping[' Kinect.Color'],
                 'basler': mapping[' InfraredCamera'],
-                'web_cam': mapping[' WebCamera'],
-                'ir': mapping[' Kinect.Infrared']
+                # 'web_cam': mapping[' WebCamera'],
+                # 'ir': mapping[' Kinect.Infrared']
             }
             data_dict = {
-                'face_poses': mapping[' Kinect.Face'],
+                # 'face_poses': mapping[' Kinect.Face'],
                 'gazes': mapping[' Gazepoint'],
-                'face_points': mapping[' Kinect.FaceVertices']
+                # 'face_points': mapping[' Kinect.FaceVertices']
             }
             return cams_dict, data_dict
 
     def read_frame(self, cam, snapshot):
         frame_file = Path.join(self.path_to_dataset, self.cams_dict[cam], snapshot + '.png')
         if Path.isfile(frame_file):
-            return Frame(cam, flip(imread(frame_file), 1))
+            if cam.name == 'web_cam':
+                image = flip(imread(frame_file), 0)
+            else:
+                image = flip(imread(frame_file), 1)
+            return Frame(cam, image)
         else:
             return None
 
@@ -136,7 +140,3 @@ class ExperimentParser:
             snapshot_index = self.snapshots[i]
             snapshot_data = self.read_snapshot(snapshot_index, verbose)
             yield snapshot_data, snapshot_index
-            # if all(snapshot_data):
-            #     yield snapshot_data
-            # else:
-            #     pass
