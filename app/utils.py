@@ -33,6 +33,7 @@ def create_gaze_video(save_path, parser, face_detector, scene, cam_name, indices
     wall_points = np.mgrid[0:1.1:0.5, 0:1.1:0.5].reshape(2, -1).T
     wall_points = np.array([wall.point_to_origin(x, y) for (x, y) in wall_points])
     resolution = (640, 480)
+    model = GazeNet().init('checkpoints/model_700_0.0025.h5')
 
     def get_web_cam_image(frames, data):
         if data['gazes']:
@@ -42,15 +43,28 @@ def create_gaze_video(save_path, parser, face_detector, scene, cam_name, indices
                 return None
             actor_basler = actors_basler[0]
             actor_basler.set_landmarks3d_gazes(*data['gazes'], scene.screens['wall'])
+
+            # Estimation
+            left_eye = frame_basler.extract_eyes_from_actor(actor_basler, equalize_hist=True, to_grayscale=True)[0]
             gaze_line_basler = [
                 actor_basler.landmarks3D['eyes']['left']['gaze'] + actor_basler.landmarks3D['eyes']['left']['center'],
                 actor_basler.landmarks3D['eyes']['left']['center']]
+            gaze_line_estimated_basler = [
+                model.estimate_gaze(left_eye, actor_basler.get_norm_vector_to_face()) + actor_basler.landmarks3D['eyes']['left']['center'],
+                actor_basler.landmarks3D['eyes']['left']['center']
+            ]
             face_line_basler = [actor_basler.landmarks3D['nose'] + 100 * actor_basler.get_norm_vector_to_face(),
                                 actor_basler.landmarks3D['nose']]
+            gaze_intersection = scene.screens['wall'].get_intersection_point_origin(gaze_line_basler)
+            face_intersection = scene.screens['wall'].get_intersection_point_origin(face_line_basler)
+            gaze_estimated_intersection = scene.screens['wall'].get_intersection_point_origin(gaze_line_estimated_basler)
 
             frame = frames[cam_name]
-            frame.project_lines(*gaze_line_basler)
-            frame.project_lines(*face_line_basler, color=(0, 0, 255))
+            frame.project_vectors(gaze_intersection)
+            frame.project_vectors(face_intersection, default_color=(0, 0, 255))
+            frame.project_vectors(gaze_estimated_intersection, default_color=(0, 255, 0))
+            frame.project_lines(*gaze_line_basler, default_color=(0, 255, 0))
+            frame.project_lines(*face_line_basler, default_color=(0, 0, 255))
             frame.project_vectors(wall_points.reshape(-1, 3))
             return cv2.resize(frame.image, resolution)
 
@@ -60,6 +74,7 @@ def create_gaze_video(save_path, parser, face_detector, scene, cam_name, indices
 def create_wall_video(save_path, parser, face_detector, scene, indices=None):
     wall = scene.screens['wall']
     resolution = tuple((np.array([wall.resolution[1], wall.resolution[0]]) / 2).astype(int))
+    model = GazeNet().init('checkpoints/model_700_0.0025.h5')
 
     def get_wall_image(frames, data):
         if data['gazes']:
@@ -69,18 +84,30 @@ def create_wall_video(save_path, parser, face_detector, scene, indices=None):
                 return None
             actor_basler = actors_basler[0]
             actor_basler.set_landmarks3d_gazes(*data['gazes'], scene.screens['wall'])
+
+            # Estimation
+            left_eye = frame_basler.extract_eyes_from_actor(actor_basler, equalize_hist=True, to_grayscale=True)[0]
             gaze_line_basler = [
                 actor_basler.landmarks3D['eyes']['left']['gaze'] + actor_basler.landmarks3D['eyes']['left']['center'],
                 actor_basler.landmarks3D['eyes']['left']['center']]
             face_line_basler = [actor_basler.landmarks3D['nose'] + 100 * actor_basler.get_norm_vector_to_face(),
                                 actor_basler.landmarks3D['nose']]
+            gaze_line_estimated_basler = [
+                model.estimate_gaze(left_eye, actor_basler.get_norm_vector_to_face()) +
+                actor_basler.landmarks3D['eyes']['left']['center'],
+                actor_basler.landmarks3D['eyes']['left']['center']
+            ]
 
             gaze_intersection = wall.get_intersection_point_in_pixels(gaze_line_basler)
             face_intersection = wall.get_intersection_point_in_pixels(face_line_basler)
-            image = wall.generate_image_with_circles(np.array([gaze_intersection, face_intersection]),
+            gaze_estimated_intersection = wall.get_intersection_point_in_pixels(gaze_line_estimated_basler)
+
+            image = wall.generate_image_with_circles(np.array([gaze_intersection,
+                                                               face_intersection,
+                                                               gaze_estimated_intersection]),
                                                      padding=1000,
-                                                     labels=['gaze', 'face_norm'],
-                                                     colors=[(255, 0, 0), (0, 255, 0)])
+                                                     labels=['gaze', 'face_norm', 'estimated_left_gaze'],
+                                                     colors=[(255, 0, 0), (0, 255, 0), (0, 0, 255)])
             return cv2.resize(image, resolution)
 
     create_video(save_path, f'wall_{parser.session_code}.avi', resolution, 5.0, parser, get_wall_image, indices)

@@ -58,7 +58,7 @@ class ExperimentParser:
             cams_dict = {
                 # 'color': mapping[' Kinect.Color'],
                 'basler': mapping[' InfraredCamera'],
-                # 'web_cam': mapping[' WebCamera'],
+                'web_cam': mapping[' WebCamera'],
                 # 'ir': mapping[' Kinect.Infrared']
             }
             data_dict = {
@@ -71,10 +71,10 @@ class ExperimentParser:
     def read_frame(self, cam, snapshot):
         frame_file = Path.join(self.path_to_dataset, self.cams_dict[cam], snapshot + '.png')
         if Path.isfile(frame_file):
-            if cam.name == 'web_cam':
-                image = flip(imread(frame_file), 0)
-            else:
-                image = flip(imread(frame_file), 1)
+            # if cam.name == 'web_cam':
+            #     image = flip(imread(frame_file), 0)
+            # else:
+            image = flip(imread(frame_file), 1)
             return Frame(cam, image)
         else:
             return None
@@ -92,6 +92,7 @@ class ExperimentParser:
         if data_key is 'gazes':
             gaze = json.load(file)
             if not gaze or not 'REC' in gaze.keys() or int(gaze['REC']['FPOGV']) == 0:
+            # if int(gaze['REC']['FPOGV']):
                 return None
             return tuple(map(float, (gaze['REC']['FPOGX'], gaze['REC']['FPOGY'])))
         else:

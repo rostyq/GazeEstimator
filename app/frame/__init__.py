@@ -18,21 +18,23 @@ class Frame:
         self.image = image.astype('uint8')
 
     @staticmethod
-    def draw_points(image, points, radius=4, color=(255, 0, 0)):
-        for point in points:
+    def draw_points(image, points, colors=(None,), radius=4, default_color=(255, 0, 0)):
+        for point, color in zip(points, colors):
+            if color is None:
+                color = color
             circle(image, tuple(point.astype(int)), radius, color, -1)
 
     @staticmethod
-    def draw_labels(image, labels, positions, colors, size=4, default_color=(255, 0, 0)):
+    def draw_labels(image, labels, positions, colors=(None,), size=4, default_color=(255, 0, 0)):
         for label, position, color in zip(labels, positions, colors):
             if color is None:
                 color = default_color
             putText(image, label, tuple(position.astype(int)), FONT_HERSHEY_SIMPLEX, size, color, 4, lineType=3)
 
     @staticmethod
-    def draw_lines(image, start_points, end_points, color=(255, 0, 0), thickness=2):
+    def draw_lines(image, start_points, end_points, default_color=(255, 0, 0), thickness=2):
         for start, end in zip(start_points, end_points):
-            line(image, tuple(start), tuple(end), color, thickness, lineType=2)
+            line(image, tuple(start), tuple(end), default_color, thickness, lineType=2)
 
     def get_projected_coordinates(self, vectors):
         return projectPoints(vectors,

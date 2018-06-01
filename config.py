@@ -50,7 +50,7 @@ ORIGIN_CAM = 'ir'
 
 DATASET_PATH = r'C:\Users\Valik\Documents\GitHub\dataroot\RETNNA\BAS\1527250535'
 
-PATH_TO_ESTIMATOR = './app/bin/estimator.h5'
+PATH_TO_ESTIMATOR = './checkpoints/model_200_0.0028.h5'  # './app/bin/estimator.h5'
 PATH_TO_FACE_MODEL = './app/bin/face_landmarks.dat'
 PATH_TO_FACE_POINTS = './app/bin/face_points_tutorial.mat'
 PATH_TO_HAARCASCADE_MODEL = './app/bin/haarcascade_frontalface_default.xml'

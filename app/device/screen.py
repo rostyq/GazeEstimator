@@ -106,7 +106,7 @@ class Screen(SceneObj):
         image[:, -3-padding:-padding], \
         image[padding:padding+3, :], \
         image[-3-padding:-padding, :] = [255] * 4
-        Frame.draw_points(image, points+padding, radius=40)
+        Frame.draw_points(image, points+padding, colors, radius=40)
         if labels:
             Frame.draw_labels(image, labels, points+padding, colors)
         return image
