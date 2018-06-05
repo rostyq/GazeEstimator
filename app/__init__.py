@@ -137,7 +137,9 @@ def create_learning_dataset(save_path, parser, face_detector, scene, indices=Non
             cv2.imwrite(Path.join(save_path, f'{index}_left.png'), left_eye_frame)
             cv2.imwrite(Path.join(save_path, f'{index}_right.png'), right_eye_frame)
 
-            learning_data['dataset'].append([actor_basler.to_learning_dataset(f'{index}_left.png', f'{index}_right.png')])
+            learning_data['dataset'].append([actor_basler.to_learning_dataset(f'{index}_left.png',
+                                                                              f'{index}_right.png',
+                                                                              scene.cams['basler'])])
 
     with open(Path.join(save_path, 'normalized_dataset.json'), mode='w') as outfile:
         json.dump(learning_data, fp=outfile, indent=2)

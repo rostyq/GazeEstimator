@@ -1,16 +1,12 @@
 from os import path as Path
 import json
+from app.device.gaze_point import OpenGazeTrackerRETTNA
 import os.path
-from app.estimation import GazeNet
-from app.device.screen import Screen
-from app.device.camera import Camera
-from app.parser import ExperimentParser
-from app.estimation.actordetector import ActorDetector
-from app.frame import Frame
-from app.actor import Actor
+from pygaze.display import Display
 from app import *
 import numpy as np
 import cv2
+import pypylon
 
 
 def create_video(save_path, name, resolution, frame_rate, parser, callback, indices=None):
@@ -160,3 +156,91 @@ def validate_calibration(parser, scene, index, face_detector, cam_names = ['basl
         cv2.waitKey()
 
     cv2.destroyAllWindows()
+
+
+def connect_gazepoint():
+    disp = Display()
+    tracker = OpenGazeTrackerRETTNA(disp)
+    tracker.start_recording()
+    return tracker
+
+
+def connect_basler():
+    basler = pypylon.factory.find_devices()[0]
+    basler.open()
+    return basler
+
+
+def show_point(point, scene):
+    screen = scene.screens['wall']
+    background = np.zeros((*screen.resolution, 3), dtype=np.uint8)
+    point_in_pixels = screen.get_point_in_pixels(*point)
+    Frame.draw_points(background, [point_in_pixels], colors=[(255, 255, 255)], radius=20)
+    cv2.imshow("experiment", background)
+
+def experiment_without_BRS(save_path, face_detector, scene, session_code):
+
+    # Save path
+    save_path = Path.join(save_path, 'normalized_data', session_code)
+    if not os.path.exists(save_path):
+        os.makedirs(save_path, exist_ok=True)
+    learning_data = {'dataset': [], 'scene': scene.to_dict()}
+
+    # Basler connection
+    basler = connect_basler()
+
+    # Gazepoint connection
+    tracker = connect_gazepoint()
+
+    # Window init
+    cv2.namedWindow("experiment", cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty("experiment", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+    index = 0
+
+    while cv2.waitKey() != 27:
+        try:
+            sample = tracker.sample()
+            frame_basler = basler.grab_images(1)[0]
+
+            if sample and frame_basler is not None and int(sample[-1]['FPOGV']):
+
+                gaze = (sample[-1]['FPOGX'], sample[-1]['FPOGY'])
+                frame_basler = Frame(scene.cams['basler'], frame_basler)
+                actors_basler = face_detector.detect_actors(frame_basler, scene.origin)
+                if len(actors_basler) == 0:
+                    continue
+                actor_basler = actors_basler[0]
+                actor_basler.set_landmarks3d_gazes(*gaze, scene.screens['wall'])
+
+                left_eye_frame, right_eye_frame = frame_basler.extract_eyes_from_actor(actor_basler,
+                                                                                       resolution=(60, 36),
+                                                                                       equalize_hist=True,
+                                                                                       to_grayscale=True)
+
+                cv2.imwrite(Path.join(save_path, f'{index}_left.png'), left_eye_frame)
+                cv2.imwrite(Path.join(save_path, f'{index}_right.png'), right_eye_frame)
+
+                learning_data['dataset'].append(
+                    [actor_basler.to_learning_dataset(f'{index}_left.png',
+                                                      f'{index}_right.png',
+                                                      scene.cams['basler'])])
+                show_point(gaze, scene)
+                index += 1
+
+        except:
+            basler.close()
+            tracker.stop_recording()
+            cv2.destroyAllWindows()
+
+    basler.close()
+    tracker.stop_recording()
+    cv2.destroyAllWindows()
+
+
+    with open(Path.join(save_path, 'normalized_dataset.json'), mode='w') as outfile:
+        json.dump(learning_data, fp=outfile, indent=2)
+    print(f"Dataset saved to {save_path}. Number of useful snapshots: {len(learning_data['dataset'])}")
+
+
+

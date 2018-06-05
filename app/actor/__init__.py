@@ -3,12 +3,15 @@ from numpy import cross
 from numpy import array
 from numpy.linalg import norm
 from app.parser import quaternion_to_angle_axis, face_point_to_array
+from numpy import sum, abs, sqrt
+from scipy.optimize import minimize
 
 class Actor(SceneObj):
 
 
     def __init__(self, name, origin):
         super().__init__(name=name, origin=origin)
+        self.eyeball_radius = 0.012
         self.landmarks3D = {
             'eyes': {
                 'left': {
@@ -26,33 +29,43 @@ class Actor(SceneObj):
             'chin': None
         }
 
-    def to_learning_dataset(self, img_left_name, img_rigth_name):
+    def to_learning_dataset(self, img_left_name, img_rigth_name, camera):
         return {
             'eyes': {
                 'left': {
-                    'gaze_norm': (self.landmarks3D['eyes']['left']['gaze']/norm(self.landmarks3D['eyes']['left']['gaze'])).tolist(),
+                    'gaze_norm': camera.vectors_to_self(
+                        self.landmarks3D['eyes']['left']['gaze']/norm(self.landmarks3D['eyes']['left']['gaze'])).tolist(),
                     'image': img_left_name,
-                    'center': self.landmarks3D['eyes']['left']['center'].tolist()
+                    'center': camera.vectors_to_self(self.landmarks3D['eyes']['left']['center']).tolist()
                 },
                 'right': {
-                    'gaze_norm': (self.landmarks3D['eyes']['right']['gaze']/norm(self.landmarks3D['eyes']['right']['gaze'])).tolist(),
+                    'gaze_norm': camera.vectors_to_self(
+                        self.landmarks3D['eyes']['right']['gaze']/norm(self.landmarks3D['eyes']['right']['gaze'])).tolist(),
                     'image': img_rigth_name,
-                    'center': self.landmarks3D['eyes']['right']['center'].tolist()
+                    'center': camera.vectors_to_self(self.landmarks3D['eyes']['right']['center']).tolist()
                 }
             },
-            'rotation_norm': (self.get_norm_vector_to_face()/norm(self.get_norm_vector_to_face())).tolist()
+            'rotation_norm': camera.vectors_to_self(self.get_norm_vector_to_face()/norm(self.get_norm_vector_to_face())).tolist()
         }
 
     def set_landmarks3d(self, face_points):
-        LeyeO = array(face_points[469])
-        LeyeI = array(face_points[210])
-        ReyeO = array(face_points[1117])
-        ReyeI = array(face_points[843])
+        face_points = array(face_points)
+        right_eye_center = [843, 1097, 1095, 1096, 1091, 1090, 1092, 1099, 1094, 1065, 1100, 1101, 1102, 992, 846, 777,
+                            776, 728, 731, 873, 733, 876, 749, 752, 992]
+
+        left_eye_center = [210, 1111, 1109, 1108, 1103, 1104, 1105, 1112, 1106, 1107, 1113, 1114, 1115, 1116, 188, 211,
+                           137, 238, 244, 241, 121, 153, 187, 316]
+
+        # Function for OLS
+        def objective_function(center, eye):
+            return sum(abs(norm(center - face_points[eye, :], axis=1) - self.eyeball_radius))
 
         self.landmarks3D['eyes']['left']['rectangle'] = array([face_points[i] for i in [1080, 201, 289, 151]])
         self.landmarks3D['eyes']['right']['rectangle'] = array([face_points[i] for i in [1084, 847, 947, 772]])
-        self.landmarks3D['eyes']['left']['center'] = (LeyeO + LeyeI)/2
-        self.landmarks3D['eyes']['right']['center'] = (ReyeO + ReyeI)/2
+        self.landmarks3D['eyes']['left']['center'] = minimize(lambda x: objective_function(x, left_eye_center),
+                                                               x0=face_points[left_eye_center[0]]).x
+        self.landmarks3D['eyes']['right']['center'] = minimize(lambda x: objective_function(x, right_eye_center),
+                                                               x0=face_points[right_eye_center[0]]).x
         self.landmarks3D['nose'] = array(face_points[18])
         self.landmarks3D['chin'] = array(face_points[4])
         return self

@@ -10,7 +10,6 @@ from app.estimation import ActorDetector
 import json
 import socketserver
 
-
 if __name__ == "__main__":
 
     face_detector = ActorDetector(path_to_face_model=PATH_TO_FACE_MODEL,
