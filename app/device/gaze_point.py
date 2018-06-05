@@ -1,13 +1,22 @@
 import copy
+from pygaze.settings import settings
+settings.DISPSIZE = (200, 200)
+settings.DISPTYPE = 'pygame'
+settings.MOUSEVISIBLE = True
+# Eye tracker properties
+# settings.TRACKERTYPE = 'opengaze'
+settings.FULLSCREEN = False
+
+
 from pygaze._eyetracker.libopengaze import OpenGazeTracker
 from pygaze._eyetracker.baseeyetracker import BaseEyeTracker
 from pygaze._eyetracker.opengaze import OpenGazeTracker as OpenGaze
-from pygaze.settings import settings
 
-from pygaze.libtime import clock
+
 from pygaze.screen import Screen
 from pygaze.keyboard import Keyboard
 from pygaze.sound import Sound
+from pygaze.settings import settings
 
 import socket
 import time
@@ -17,12 +26,6 @@ try:
 except:
     pass
 
-DISPSIZE = (200, 200)
-DISPTYPE = 'psychopy'
-MOUSEVISIBLE = True
-# Eye tracker properties
-TRACKERTYPE = 'opengaze'
-FULLSCREEN = False
 
 class OpenGazeTrackerRETTNA(OpenGazeTracker):
 
@@ -86,7 +89,7 @@ class OpenGazeTrackerRETTNA(OpenGazeTracker):
         self.weightdist = 10  # weighted distance, used for determining whether a movement is due to measurement error (1 is ok, higher is more conservative and will result in only larger saccades to be detected)
 
         # connect to the tracker
-        self.opengaze = OpenGazeRETNNA(ip='192.168.89.44', port=4242, \
+        self.opengaze = OpenGazeRETNNA(ip='192.168.0.32', port=4242, \
                                        logfile=self.outputfile, debug=True)
 
         # get info on the sample rate

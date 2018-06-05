@@ -56,15 +56,15 @@ class ExperimentParser:
             mapping = mapping.read().split(sep='\n')
             mapping = {item.split(sep=';')[1]: item.split(sep=';')[0] for item in mapping[:-1]}
             cams_dict = {
-                'color': mapping[' Kinect.Color'],
+                # 'color': mapping[' Kinect.Color'],
                 'basler': mapping[' InfraredCamera'],
                 'web_cam': mapping[' WebCamera'],
-                'ir': mapping[' Kinect.Infrared']
+                # 'ir': mapping[' Kinect.Infrared']
             }
             data_dict = {
                 # 'face_poses': mapping[' Kinect.Face'],
                 'gazes': mapping[' Gazepoint'],
-                'face_points': mapping[' Kinect.FaceVertices']
+                # 'face_points': mapping[' Kinect.FaceVertices']
             }
             return cams_dict, data_dict
 

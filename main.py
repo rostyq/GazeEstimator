@@ -2,6 +2,7 @@ from config import *
 from os import path
 from app import Scene
 from app import create_learning_dataset
+from app.utils import experiment_without_BRS
 from app import ExperimentParser
 import sys
 from app import Actor
@@ -23,11 +24,13 @@ if __name__ == "__main__":
         extrinsic_params = json.load(f)
 
     scene = Scene(origin_name=ORIGIN_CAM, intrinsic_params=INTRINSIC_PARAMS, extrinsic_params=extrinsic_params)
+    experiment_without_BRS('../', face_detector, scene, 'Valik')
 
-    parser = ExperimentParser(session_code=path.split(DATASET_PATH)[-1])
-    parser.fit(DATASET_PATH, scene)
+    # parser = ExperimentParser(session_code=path.split(DATASET_PATH)[-1])
+    # parser.fit(DATASET_PATH, scene)
 
-    create_learning_dataset('../', parser, face_detector, scene, indices=range(len(parser.snapshots)))
+    # create_learning_dataset('../', parser, face_detector, scene, indices=range(len(parser.snapshots)))
+
     # HOST, PORT = '127.0.0.1', 5055
     #
     # # Create the server, binding to localhost on port 9999

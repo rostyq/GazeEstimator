@@ -166,7 +166,8 @@ def connect_gazepoint():
 
 
 def connect_basler():
-    basler = pypylon.factory.find_devices()[0]
+    print(pypylon.factory.find_devices())
+    basler = pypylon.factory.create_device(pypylon.factory.find_devices()[0])
     basler.open()
     return basler
 
@@ -177,6 +178,7 @@ def show_point(point, scene):
     point_in_pixels = screen.get_point_in_pixels(*point)
     Frame.draw_points(background, [point_in_pixels], colors=[(255, 255, 255)], radius=20)
     cv2.imshow("experiment", background)
+
 
 def experiment_without_BRS(save_path, face_detector, scene, session_code):
 
@@ -228,7 +230,7 @@ def experiment_without_BRS(save_path, face_detector, scene, session_code):
                 show_point(gaze, scene)
                 index += 1
 
-        except:
+        except Exception as ex:
             basler.close()
             tracker.stop_recording()
             cv2.destroyAllWindows()
