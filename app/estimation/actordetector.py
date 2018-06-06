@@ -47,6 +47,8 @@ class ActorDetector:
 
     @staticmethod
     def to_grayscale(image):
+        if image.ndim == 2:
+            return image
         return cvtColor(image, COLOR_BGR2GRAY)
 
     @staticmethod

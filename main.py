@@ -24,7 +24,7 @@ if __name__ == "__main__":
         extrinsic_params = json.load(f)
 
     scene = Scene(origin_name=ORIGIN_CAM, intrinsic_params=INTRINSIC_PARAMS, extrinsic_params=extrinsic_params)
-    experiment_without_BRS('../', face_detector, scene, 'Valik')
+    experiment_without_BRS('../', face_detector, scene, 'valik')
 
     # parser = ExperimentParser(session_code=path.split(DATASET_PATH)[-1])
     # parser.fit(DATASET_PATH, scene)
