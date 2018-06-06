@@ -11,11 +11,20 @@ from cv2 import solvePnP, SOLVEPNP_ITERATIVE
 from cv2 import Rodrigues
 from cv2 import CascadeClassifier
 from numpy import array
-from numpy.linalg import inv
 from numpy import tile
 
 
 class ActorDetector:
+
+    # landmarks_to_model = {31: 0,  # Nose tip
+    #                            9: 1,  # Chin
+    #                            37: 2,  # Right eye right corner
+    #                            46: 3,  # Left eye left corner
+    #                            49: 4,  # Right mouth corner
+    #                            55: 5  # Left Mouth corner
+    #                            }
+
+    landmarks_to_model = [31, 9, 37, 46, 49, 55]
 
     def __init__(self, path_to_face_model, path_to_face_points, factor, chin_nose_distance=0.065):
         self.detector = get_frontal_face_detector()
@@ -31,13 +40,6 @@ class ActorDetector:
         self.model_points = self.model_points * scale
         self.eye_height = 60 * scale
         self.eye_width = 160 * scale
-        self.landmarks_to_model = {31: 0,  # Nose tip
-                                   9: 1,  # Chin
-                                   37: 2,  # Right eye right corner
-                                   46: 3,  # Left eye left corner
-                                   49: 4,  # Right mouth corner
-                                   55: 5  # Left Mouth corner
-                                   }
 
     def rescale_coordinates(self, coords):
         return (coords * self.factor).astype(int)
@@ -60,25 +62,25 @@ class ActorDetector:
         return DlibRectangles([DlibRectangle(*cvface[:2], *(cvface[:2] + cvface[2:]))
                                for cvface in cvfaces])
 
-    def _extract_face_landmarks(self, landmarks2D):
+    @classmethod
+    def _extract_face_landmarks(cls, landmarks2D):
         """
         Extract 6 face landmarks from self.landmarks which corresponds to generic face model
         :return: None
         """
-        if len(landmarks2D) == 0:
+        if not landmarks2D:
             return []
-        faces_landmarks = [[None] * 6] * len(landmarks2D)
-        for (k, face_landmarks2D) in enumerate(landmarks2D):
-            for (j, (x, y)) in enumerate(face_landmarks2D):
-                if j + 1 in self.landmarks_to_model.keys():
-                    faces_landmarks[k][self.landmarks_to_model[j + 1]] = (x, y)
-        return faces_landmarks
+        # faces_landmarks = [[None] * 6] * len(landmarks2D)
+        # for (k, face_landmarks2D) in enumerate(landmarks2D):
+        #     for (j, (x, y)) in enumerate(face_landmarks2D):
+        #         if j + 1 in cls.landmarks_to_model.keys():
+        #             faces_landmarks[k][cls.landmarks_to_model[j + 1]] = (x, y)
+        # return faces_landmarks
+        return [face_landmarks2D[cls.landmarks_to_model] for face_landmarks2D in landmarks2D]
 
-    def _vectors_from_model_to_origin(self, vectors, rotation_vector, translation_vector, camera):
-        vectors = vectors.reshape((3, -1))
-        rotation_matrix = Rodrigues(rotation_vector)[0]
-        vectors_camera_space = (rotation_matrix) @ vectors + translation_vector
-        return camera.vectors_to_origin(vectors_camera_space)
+    @staticmethod
+    def _vectors_from_model_to_origin(vectors, rotation_vector, translation_vector, camera):
+        return camera.vectors_to_origin(Rodrigues(rotation_vector)[0] @ vectors.reshape(3, -1) + translation_vector)
 
     def _eye_rectagle(self, eye_model_space, right=True):
         eye_rectangle_model_space = tile(eye_model_space, (4, 1))

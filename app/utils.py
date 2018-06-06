@@ -7,7 +7,7 @@ from app import *
 import numpy as np
 import cv2
 import pypylon
-
+import time
 
 def create_video(save_path, name, resolution, frame_rate, parser, callback, indices=None):
     if not os.path.exists(save_path):
@@ -162,6 +162,7 @@ def connect_gazepoint():
     disp = Display()
     tracker = OpenGazeTrackerRETTNA(disp)
     tracker.start_recording()
+    disp.close()
     return tracker
 
 
@@ -198,21 +199,23 @@ def experiment_without_BRS(save_path, face_detector, scene, session_code, predic
     # Basler connection
     basler = connect_basler()
 
-    # Gazepoint connection
-    tracker = connect_gazepoint()
-
     # Window init
     cv2.namedWindow("experiment", cv2.WINDOW_NORMAL)
     cv2.setWindowProperty("experiment", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     index = 0
+
+    # Gazepoint connection
+    tracker = connect_gazepoint()
+
     try:
         while not ispressed(27):
 
             sample = tracker.sample()
             frame_basler = next(basler.grab_images(1))
-
+            start = time.time()
             if sample and frame_basler is not None and int(sample[-1]['FPOGV']):
+                print(len(sample))
 
                 gaze = tuple(map(float, (sample[-1]['FPOGX'], sample[-1]['FPOGY'])))
                 frame_basler = Frame(scene.cams['basler'], frame_basler)
@@ -263,6 +266,7 @@ def experiment_without_BRS(save_path, face_detector, scene, session_code, predic
                                                           f'{index}_right.png',
                                                           scene.cams['basler'])])
                 index += 1
+                print(time.time() - start)
 
     finally:
         basler.close()
