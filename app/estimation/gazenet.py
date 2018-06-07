@@ -52,27 +52,18 @@ class GazeNet:
                                 compile=True)
         return self
 
-    def train(self, images, poses, gazes, epochs, batch_size, path_to_save, create_new=False, val_split=0.8, **kwargs):
+    def train(self, path_to_save, create_new=False, create_dict=None, **kwargs):
         if create_new:
-            self.model = create_model(**kwargs)
+            if create_dict is None:
+                create_dict = {}
+            self.model = create_model(**create_dict)
         callbacks = create_callbacks(path_to_save)
 
         if not os.path.exists(path_to_save):
             os.makedirs(path_to_save)
 
-        split = int(images.shape[0] * val_split)
-        input_train = prepare(images[:split, :], poses[:split, :])
-        gazes_train = gaze3Dto2D(gazes[:split, :])
-        validation_data = (prepare(images[split:, :], poses[split:, :]), gaze3Dto2D(gazes[split:, :]))
-
         try:
-            self.model.fit(x=input_train,
-                           y=gazes_train,
-                           batch_size=batch_size,
-                           verbose=1,
-                           epochs=epochs,
-                           validation_data=validation_data,
-                           callbacks=callbacks)
+            self.model.fit(verbose=1, callbacks=callbacks, **kwargs)
         finally:
             self.model.save(f'{path_to_save}/model_last.h5')
         return self
