@@ -25,7 +25,7 @@ class Frame:
             circle(image, tuple(point.astype(int)), radius, color, -1)
 
     @staticmethod
-    def draw_labels(image, labels, positions, colors=(None,), size=4, default_color=(255, 0, 0)):
+    def draw_labels(image, labels, positions, colors=(None,), size=4, default_color=(255, 255, 255)):
         for label, position, color in zip(labels, positions, colors):
             if color is None:
                 color = default_color

@@ -7,6 +7,7 @@ from app import *
 import numpy as np
 import cv2
 import pypylon
+import logging as log
 import time
 
 def create_video(save_path, name, resolution, frame_rate, parser, callback, indices=None):
@@ -83,16 +84,14 @@ def create_wall_video(save_path, parser, face_detector, scene, indices=None):
 
             # Estimation
             left_eye = frame_basler.extract_eyes_from_actor(actor_basler, equalize_hist=True, to_grayscale=True)[0]
-            gaze_line_basler = [
-                actor_basler.landmarks3D['eyes']['left']['gaze'] + actor_basler.landmarks3D['eyes']['left']['center'],
-                actor_basler.landmarks3D['eyes']['left']['center']]
+            gaze_line_basler = actor_basler.get_gaze_line(actor_basler.landmarks3D['eyes']['left']['gaze'])
             face_line_basler = [actor_basler.landmarks3D['nose'] + 100 * actor_basler.get_norm_vector_to_face(),
                                 actor_basler.landmarks3D['nose']]
-            gaze_line_estimated_basler = [
-                model.estimate_gaze(left_eye, actor_basler.get_norm_vector_to_face()) +
-                actor_basler.landmarks3D['eyes']['left']['center'],
-                actor_basler.landmarks3D['eyes']['left']['center']
-            ]
+            gaze_line_estimated_basler = actor_basler.get_gaze_line(
+                frame_basler.camera.vectors_to_origin(
+                    model.estimate_gaze(left_eye_frame, actor_basler.get_norm_vector_to_face())
+                )
+            )
 
             gaze_intersection = wall.get_intersection_point_in_pixels(gaze_line_basler)
             face_intersection = wall.get_intersection_point_in_pixels(face_line_basler)
@@ -166,10 +165,12 @@ def connect_gazepoint():
     return tracker
 
 
-def connect_basler():
+def connect_basler(exposure_time = 1000):
     print(pypylon.factory.find_devices())
     basler = pypylon.factory.create_device(pypylon.factory.find_devices()[0])
     basler.open()
+    basler.properties['ExposureTime'] = exposure_time
+    basler.properties['DeviceLinkThroughputLimitMode'] = 'Off'
     return basler
 
 
@@ -180,11 +181,12 @@ def show_point(point, scene):
     Frame.draw_points(background, [point_in_pixels], colors=[(255, 255, 255)], radius=20)
     cv2.imshow("experiment", background)
 
+
 def ispressed(button, delay=1):
     return cv2.waitKey(delay) == button
 
 
-def experiment_without_BRS(save_path, face_detector, scene, session_code, predict=False):
+def experiment_without_BRS(save_path, face_detector, scene, session_code, dataset_size=100, predict=False):
 
     # Save path
     save_path = Path.join(save_path, 'normalized_data', session_code)
@@ -203,79 +205,91 @@ def experiment_without_BRS(save_path, face_detector, scene, session_code, predic
     cv2.namedWindow("experiment", cv2.WINDOW_NORMAL)
     cv2.setWindowProperty("experiment", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
-    index = 0
-
     # Gazepoint connection
     tracker = connect_gazepoint()
 
+    # Logging
+    log.basicConfig(filename='log/experiment.log', level=logging.INFO)
+
+    index = 0
+    frames_basler = []
+    gazes = []
+
+    # Shooting
     try:
-        while not ispressed(27):
-
+        while index < dataset_size:
             sample = tracker.sample()
+            gaze_time = time.time()
             frame_basler = next(basler.grab_images(1))
-            start = time.time()
+            frame_time = time.time()
+            log.info(f'GazePoint time: {gaze_time}, basler time: {frame_time}')
             if sample and frame_basler is not None and int(sample[-1]['FPOGV']):
-                print(len(sample))
-
+                print(f'Lag: {len(sample)} gazepoint samples')
                 gaze = tuple(map(float, (sample[-1]['FPOGX'], sample[-1]['FPOGY'])))
                 frame_basler = Frame(scene.cams['basler'], frame_basler)
-                actors_basler = face_detector.detect_actors(frame_basler, scene.origin)
-                if len(actors_basler) == 0:
-                    print('No actors found!')
-                    continue
-                actor_basler = actors_basler[0]
-                actor_basler.set_landmarks3d_gazes(*gaze, scene.screens['wall'])
-
-                left_eye_frame, right_eye_frame = frame_basler.extract_eyes_from_actor(actor_basler,
-                                                                                       resolution=(60, 36),
-                                                                                       equalize_hist=True,
-                                                                                       to_grayscale=False)
-                gaze_line_basler = [
-                    actor_basler.landmarks3D['eyes']['left']['gaze'] + actor_basler.landmarks3D['eyes']['left'][
-                        'center'],
-                    actor_basler.landmarks3D['eyes']['left']['center']]
-                gaze_intersection = wall.get_intersection_point_in_pixels(gaze_line_basler)
-
-                if predict:
-                    gaze_line_estimated_basler = [
-                        frame_basler.camera.vectors_to_origin(
-                            model.estimate_gaze(left_eye_frame, actor_basler.get_norm_vector_to_face())).reshape(3) +
-                        actor_basler.landmarks3D['eyes']['left']['center'],
-                        actor_basler.landmarks3D['eyes']['left']['center']
-                    ]
-
-                    gaze_estimated_intersection = wall.get_intersection_point_in_pixels(gaze_line_estimated_basler)
-                    image = wall.generate_image_with_circles(np.array([gaze_intersection, gaze_estimated_intersection]),
-                                                             padding=0,
-                                                             labels=['gaze', 'estimated_left_gaze'],
-                                                             colors=[(255, 0, 0), (0, 255, 0)])
-                else:
-                    image = wall.generate_image_with_circles(np.array([gaze_intersection]),
-                                                             padding=0,
-                                                             labels=['gaze'],
-                                                             colors=[(255, 255, 255)])
-
-                cv2.imshow("experiment", image)
-
-                if not predict:
-                    cv2.imwrite(Path.join(save_path, f'{index}_left.png'), left_eye_frame)
-                    cv2.imwrite(Path.join(save_path, f'{index}_right.png'), right_eye_frame)
-
-                    learning_data['dataset'].append(
-                        [actor_basler.to_learning_dataset(f'{index}_left.png',
-                                                          f'{index}_right.png',
-                                                          scene.cams['basler'])])
+                show_point(gaze, scene)
+                frames_basler.append(frame_basler)
+                gazes.append(gaze)
                 index += 1
-                print(time.time() - start)
-
     finally:
         basler.close()
         tracker.stop_recording()
         cv2.destroyAllWindows()
 
-    with open(Path.join(save_path, 'normalized_dataset.json'), mode='w') as outfile:
-        json.dump(learning_data, fp=outfile, indent=2)
-    print(f"Dataset saved to {save_path}. Number of useful snapshots: {len(learning_data['dataset'])}")
+    # Processing
+    for gaze, frame_basler in zip(gazes, frames_basler):
+        actors_basler = face_detector.detect_actors(frame_basler, scene.origin)
+        if len(actors_basler) == 0:
+            print('No actors found!')
+            continue
+        actor_basler = actors_basler[0]
+        actor_basler.set_landmarks3d_gazes(*gaze, wall)
+
+        left_eye_frame, right_eye_frame = frame_basler.extract_eyes_from_actor(actor_basler,
+                                                                               resolution=(60, 36),
+                                                                               equalize_hist=True,
+                                                                               to_grayscale=False)
+        gaze_line_basler = actor_basler.get_gaze_line(actor_basler.landmarks3D['eyes']['left']['gaze'])
+        gaze_intersection = wall.get_intersection_point_in_pixels(gaze_line_basler)
+
+        if predict:
+            gaze_line_estimated_basler = actor_basler.get_gaze_line(
+                frame_basler.camera.vectors_to_origin(
+                    model.estimate_gaze(left_eye_frame, actor_basler.get_norm_vector_to_face())
+                )
+            )
+            face_line_basler = [actor_basler.landmarks3D['nose'] + 100 * actor_basler.get_norm_vector_to_face(),
+                                actor_basler.landmarks3D['nose']]
+            gaze_estimated_intersection = wall.get_intersection_point_in_pixels(gaze_line_estimated_basler)
+            face_intersection = wall.get_intersection_point_in_pixels(face_line_basler)
+            image = wall.generate_image_with_circles(np.array([gaze_intersection,
+                                                               gaze_estimated_intersection,
+                                                               face_intersection]),
+                                                     padding=0,
+                                                     labels=['gaze', 'estimated_left_gaze', 'face_norm'],
+                                                     colors=[(255, 0, 0), (0, 255, 0), (0, 0, 255)])
+            Frame.draw_labels(image, [f'Number of useful samples: {len(learning_data["dataset"])}'], [(0, 100)])
+        else:
+            image = wall.generate_image_with_circles(np.array([gaze_intersection]),
+                                                     padding=0,
+                                                     labels=['gaze'],
+                                                     colors=[(255, 255, 255)])
+
+        cv2.imshow("experiment", image)
+
+        if not predict:
+            cv2.imwrite(Path.join(save_path, f'{index}_left.png'), left_eye_frame)
+            cv2.imwrite(Path.join(save_path, f'{index}_right.png'), right_eye_frame)
+
+            learning_data['dataset'].append(
+                actor_basler.to_learning_dataset(f'{index}_left.png', f'{index}_right.png', scene.cams['basler'])
+            )
+
+
+    if not predict:
+        with open(Path.join(save_path, 'normalized_dataset.json'), mode='w') as outfile:
+            json.dump(learning_data, fp=outfile, indent=2)
+        print(f"Dataset saved to {save_path}. Number of useful snapshots: {len(learning_data['dataset'])}")
 
 
 
