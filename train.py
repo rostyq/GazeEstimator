@@ -5,7 +5,7 @@ import os
 
 DATASET_PATH = '../normalized_data/'
 
-SESSIONS = os.listdir(DATASET_PATH)
+SESSIONS = sorted(os.listdir(DATASET_PATH))
 print(SESSIONS)
 
 datasetparser = DatasetParser(images='dataset/{index}/eyes/{eye}/image',
@@ -17,8 +17,10 @@ val_split_ratio = 0.8
 train_arrays = [], [], []
 val_arrays = [], [], []
 
-for SESS in SESSIONS[::-1][:-1]:
-    print(f'train: {SESSIONS[::-1][:-1]}')
+print(f'train: {SESSIONS[:-3]}')
+print(f'test: {SESSIONS[-3:]}')
+
+for SESS in SESSIONS[:-3]:
     IMAGES_PATH = os.path.join(DATASET_PATH, SESS)
 
     with open(os.path.join(IMAGES_PATH, 'normalized_dataset.json'), 'r') as session_data:
@@ -44,7 +46,7 @@ gaze_estimator.train(create_new=True,
                      x=[train_eyes, train_poses],
                      y=train_gazes,
                      validation_data=([val_eyes, val_poses], val_gazes),
-                     batch_size=32,
+                     batch_size=128,
                      epochs=1000)
 
 IMAGES_PATH = os.path.join(DATASET_PATH, SESSIONS[-1])
@@ -52,4 +54,4 @@ with open(os.path.join(os.path.join(IMAGES_PATH), 'normalized_dataset.json'), 'r
     datasetparser.fit(jsonfile=session_data, path_to_images=IMAGES_PATH)
     test_eyes, test_poses, test_gazes = datasetparser.get_full_data()
 
-print('Score: ', gaze_estimator.model.evaluate([test_eyes, test_poses], test_gazes, batch_size=32))
+print('Score: ', gaze_estimator.model.evaluate([test_eyes, test_poses], test_gazes, batch_size=128))

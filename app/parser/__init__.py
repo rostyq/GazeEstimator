@@ -63,7 +63,7 @@ class ExperimentParser:
             }
             data_dict = {
                 # 'face_poses': mapping[' Kinect.Face'],
-                'gazes': mapping[' Gazepoint'],
+                # 'gazes': mapping[' Gazepoint'],
                 'face_points': mapping[' Kinect.FaceVertices']
             }
             return cams_dict, data_dict

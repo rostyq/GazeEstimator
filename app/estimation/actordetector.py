@@ -41,6 +41,7 @@ class ActorDetector:
         self.model_points = self.model_points * scale
         self.eye_height = 60 * scale
         self.eye_width = 160 * scale
+        self.nose_chin_distance = chin_nose_distance
 
     def rescale_coordinates(self, coords):
         return (coords * self.factor).astype(int)
@@ -123,6 +124,7 @@ class ActorDetector:
             actor = Actor(name=f'Actor{i}', origin=origin)
             actor.set_dlib_landmarks3d(face_model_origin_space)
             actor.rotation = frame.camera.rotation + rotation_vector
+            actor.nose_chin_distance = self.nose_chin_distance
             actors.append(actor)
 
         return actors

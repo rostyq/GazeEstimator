@@ -28,6 +28,7 @@ class Actor(SceneObj):
             'nose': None,
             'chin': None
         }
+        self.nose_chin_distance = None
 
     def to_learning_dataset(self, img_left_name, img_rigth_name, camera):
         return {
@@ -45,7 +46,9 @@ class Actor(SceneObj):
                     'center': camera.vectors_to_self(self.landmarks3D['eyes']['right']['center']).tolist()
                 }
             },
-            'rotation_norm': camera.vectors_to_self(self.get_norm_vector_to_face()/norm(self.get_norm_vector_to_face())).tolist()
+            'rotation_norm': camera.vectors_to_self(self.get_norm_vector_to_face()/norm(self.get_norm_vector_to_face())).tolist(),
+            'nose_chin_distance': self.nose_chin_distance,
+            'name': self.name
         }
 
     def set_kinect_landmarks3d(self, face_points):
@@ -102,10 +105,10 @@ class Actor(SceneObj):
         return cross(self.landmarks3D['chin'] - self.landmarks3D['eyes']['left']['center'],
                      self.landmarks3D['chin'] - self.landmarks3D['eyes']['right']['center'])
 
-    def get_gaze_line(self, gaze_vector):
+    def get_gaze_line(self, gaze_vector, key):
         return (
-            self.landmarks3D['eyes']['left']['center'] + gaze_vector.reshape(3),
-            self.landmarks3D['eyes']['left']['center']
+            self.landmarks3D['eyes'][key]['center'] + gaze_vector.reshape(3),
+            self.landmarks3D['eyes'][key]['center']
         )
 
 

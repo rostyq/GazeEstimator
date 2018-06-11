@@ -2,7 +2,7 @@ from config import *
 from os import path
 from app import Scene
 from app import create_learning_dataset
-from app.utils import experiment_without_BRS
+from app.utils import experiment_without_BRS, visualize_predict
 from app import ExperimentParser
 import sys
 from app import Actor
@@ -17,7 +17,7 @@ if __name__ == "__main__":
                                   path_to_face_points=PATH_TO_FACE_POINTS,
                                   path_to_hc_model=PATH_TO_HAARCASCADE_MODEL,
                                   factor=6,
-                                  chin_nose_distance=0.065)
+                                  chin_nose_distance=0.07)
     if len(sys.argv) == 2:
         DATASET_PATH = sys.argv[1]
 
@@ -25,7 +25,8 @@ if __name__ == "__main__":
         extrinsic_params = json.load(f)
 
     scene = Scene(origin_name=ORIGIN_CAM, intrinsic_params=INTRINSIC_PARAMS, extrinsic_params=extrinsic_params)
-    experiment_without_BRS('../', face_detector, scene, 'valik_test')
+    # experiment_without_BRS('../', face_detector, scene, 'valik_melnichuk_2')
+    visualize_predict(face_detector, scene, 'checkpoints/model_100_0.0063.h5')
 
     # parser = ExperimentParser(session_code=path.split(DATASET_PATH)[-1])
     # parser.fit(DATASET_PATH, scene)
