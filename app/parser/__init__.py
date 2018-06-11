@@ -71,10 +71,10 @@ class ExperimentParser:
     def read_frame(self, cam, snapshot):
         frame_file = Path.join(self.path_to_dataset, self.cams_dict[cam], snapshot + '.png')
         if Path.isfile(frame_file):
-            # if cam.name == 'web_cam':
-            #     image = flip(imread(frame_file), 0)
-            # else:
-            image = flip(imread(frame_file), 1)
+            if cam.name == 'web_cam':
+                image = flip(imread(frame_file), 0)
+            else:
+                image = flip(imread(frame_file), 1)
             return Frame(cam, image)
         else:
             return None

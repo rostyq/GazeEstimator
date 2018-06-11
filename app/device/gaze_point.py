@@ -29,7 +29,7 @@ except:
 
 class OpenGazeTrackerRETTNA(OpenGazeTracker):
 
-    def __init__(self, display, logfile=settings.LOGFILE, \
+    def __init__(self, display, logfile='log/log', \
                  eventdetection=settings.EVENTDETECTION, \
                  saccade_velocity_threshold=35, \
                  saccade_acceleration_threshold=9500, \

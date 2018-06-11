@@ -60,7 +60,7 @@ def create_model(learning_rate=1e-2, seed=None):
     input_img = Input(shape=(36, 60, 1), name='InputImage')
     input_pose = Input(shape=(2,), name='InputPose')
 
-    regularizer = l2(0.0)
+    regularizer = l2(1e-2)
 
     # convolutional
     conv1 = Conv2D(
