@@ -4,6 +4,7 @@ from keras.layers import Concatenate
 from keras.layers import Flatten
 from keras.layers.convolutional import Conv2D
 from keras.layers.pooling import MaxPool2D
+from keras.layers import Dropout
 
 from keras.initializers import RandomNormal
 from keras.initializers import glorot_uniform
@@ -50,6 +51,7 @@ def calc_angle(angles1, angles2):
         name='acos'
         ) * 180 / pi
 
+
 def angle_accuracy(target, predicted):
     return tf.reduce_mean(calc_angle(predicted, target), name='mean_angle')
 
@@ -57,16 +59,16 @@ def angle_accuracy(target, predicted):
 def create_model(learning_rate=1e-2, seed=None):
 
     # input
-    input_img = Input(shape=(36, 60, 1), name='InputImage')
+    input_img = Input(shape=(72, 120, 1), name='InputImage')
     input_pose = Input(shape=(2,), name='InputPose')
 
-    regularizer = l2(1e-2)
+    regularizer = l2(1e-5)
 
     # convolutional
     conv1 = Conv2D(
-        filters=20,
+        filters=2,
         activation='relu',
-        kernel_size=(5, 5),
+        kernel_size=(3, 3),
         strides=(1, 1),
         kernel_initializer=RandomNormal(mean=0.0, stddev=0.1, seed=seed),
         bias_initializer='zeros',
@@ -80,7 +82,7 @@ def create_model(learning_rate=1e-2, seed=None):
         name='maxpool1'
         )(conv1)
     conv2 = Conv2D(
-        filters=50,
+        filters=8,
         activation='relu',
         kernel_size=(5, 5),
         strides=(1, 1),
@@ -95,12 +97,28 @@ def create_model(learning_rate=1e-2, seed=None):
         padding='valid',
         name='maxpool2'
         )(conv2)
+    conv3 = Conv2D(
+        filters=16,
+        activation='relu',
+        kernel_size=(7, 7),
+        strides=(1, 1),
+        kernel_initializer=RandomNormal(mean=0.0, stddev=0.01, seed=seed),
+        bias_initializer='zeros',
+        # kernel_regularizer=regularizer,
+        name='conv3'
+        )(pool2)
+    pool3 = MaxPool2D(
+        pool_size=(2, 2),
+        strides=(2, 2),
+        padding='valid',
+        name='maxpool3'
+        )(conv3)
 
-    flatt = Flatten(name='flatt')(pool2)
+    flatt = Flatten(name='flatt')(pool3)
 
     # inner product 1
     dense1 = Dense(
-        units=500,
+        units=100,
         activation='relu',
         kernel_initializer=glorot_uniform(seed=seed),
         bias_initializer='zeros',
@@ -108,17 +126,26 @@ def create_model(learning_rate=1e-2, seed=None):
         name='fc1'
         )(flatt)
 
+    # dense2 = Dense(
+    #     units=250,
+    #     activation='relu',
+    #     kernel_initializer=glorot_uniform(seed=seed),
+    #     bias_initializer='zeros',
+    #     kernel_regularizer=regularizer,
+    #     name='fc2'
+    # )(dense1)
+
     # concatanate with head pose
     cat = Concatenate(axis=-1, name='concat')([dense1, input_pose])
 
     #dropout = Dropout(rate=0.1)(cat)
 
     # inner product 2
-    dense2 = Dense(
+    dense3 = Dense(
         units=2,
         kernel_initializer=glorot_uniform(seed=seed),
         bias_initializer='zeros',
-        name='fc2'
+        name='fc3'
         )(cat)
 
     ### OPTIMIZER ###
@@ -130,8 +157,9 @@ def create_model(learning_rate=1e-2, seed=None):
         )
 
     ### COMPILE MODEL ###
-    model = Model([input_img, input_pose], dense2)
+    model = Model([input_img, input_pose], dense3)
     model.compile(optimizer=optimizer, loss="mean_squared_error", metrics=[angle_accuracy])
+    print(model.summary())
     return model
 
 def create_callbacks(path_to_save):
@@ -147,7 +175,7 @@ def create_callbacks(path_to_save):
     checkpoint = ModelCheckpoint(
         path_to_save+'/model_{epoch}_{val_loss:.4f}.h5',
         monitor='val_loss',
-        period=100
+        period=20
         )
     reduce_lr = ReduceLROnPlateau(
         monitor='val_loss',

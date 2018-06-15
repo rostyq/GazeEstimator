@@ -88,10 +88,11 @@ class Actor(SceneObj):
         self.landmarks3D['eyes']['left']['center'] = left_eye_center_origin_space
         self.landmarks3D['eyes']['right']['center'] = right_eye_center_origin_space
 
-    def set_landmarks3d_gazes(self, x, y, screen):
-        gaze_point_origin_space = screen.point_to_origin(x, y).reshape(3)
-        self.landmarks3D['eyes']['left']['gaze'] = gaze_point_origin_space - self.landmarks3D['eyes']['left']['center']
-        self.landmarks3D['eyes']['right']['gaze'] = gaze_point_origin_space - self.landmarks3D['eyes']['right']['center']
+    def set_landmarks3d_gazes(self, gazes, screen):
+        left_gaze_point_origin_space = screen.point_to_origin(*gazes['left']).reshape(3)
+        right_gaze_point_origin_space = screen.point_to_origin(*gazes['right']).reshape(3)
+        self.landmarks3D['eyes']['left']['gaze'] = left_gaze_point_origin_space - self.landmarks3D['eyes']['left']['center']
+        self.landmarks3D['eyes']['right']['gaze'] = right_gaze_point_origin_space - self.landmarks3D['eyes']['right']['center']
 
     def set_rotation(self, face_rotation_quaternion):
         self.rotation = quaternion_to_angle_axis(face_rotation_quaternion)

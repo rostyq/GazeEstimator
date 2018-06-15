@@ -4,6 +4,7 @@ import json
 import bson
 from cv2 import imread
 from cv2 import flip
+from cv2 import blur
 from app.frame import Frame
 from numpy import array
 from numpy import sqrt
@@ -56,15 +57,15 @@ class ExperimentParser:
             mapping = mapping.read().split(sep='\n')
             mapping = {item.split(sep=';')[1]: item.split(sep=';')[0] for item in mapping[:-1]}
             cams_dict = {
-                'color': mapping[' Kinect.Color'],
+                # 'color': mapping[' Kinect.Color'],
                 'basler': mapping[' InfraredCamera'],
                 'web_cam': mapping[' WebCamera'],
-                'ir': mapping[' Kinect.Infrared']
+                # 'ir': mapping[' Kinect.Infrared']
             }
             data_dict = {
                 # 'face_poses': mapping[' Kinect.Face'],
-                # 'gazes': mapping[' Gazepoint'],
-                'face_points': mapping[' Kinect.FaceVertices']
+                'gazes': mapping[' Gazepoint'],
+                # 'face_points': mapping[' Kinect.FaceVertices']
             }
             return cams_dict, data_dict
 
@@ -73,6 +74,8 @@ class ExperimentParser:
         if Path.isfile(frame_file):
             if cam.name == 'web_cam':
                 image = flip(imread(frame_file), 0)
+            elif cam.name == 'basler':
+                image = blur(flip(imread(frame_file), 1), (3, 3))
             else:
                 image = flip(imread(frame_file), 1)
             return Frame(cam, image)
@@ -91,10 +94,11 @@ class ExperimentParser:
             return [quaternion_to_angle_axis(face_pose['FaceRotationQuaternion']) for face_pose in bson.loads(file.read())]
         if data_key is 'gazes':
             gaze = json.load(file)
-            if not gaze or not 'REC' in gaze.keys() or int(gaze['REC']['FPOGV']) == 0:
+            if not gaze or not 'REC' in gaze.keys() or not 'FPOGV' in gaze['REC'].keys() or int(gaze['REC']['FPOGV']) == 0:
             # if int(gaze['REC']['FPOGV']):
                 return None
-            return tuple(map(float, (gaze['REC']['FPOGX'], gaze['REC']['FPOGY'])))
+            return {'left' : tuple(map(float, (gaze['REC']['LPOGX'], gaze['REC']['LPOGY']))),
+                    'right' : tuple(map(float, (gaze['REC']['RPOGX'], gaze['REC']['RPOGY'])))}
         else:
             raise Exception('Wrong data_key.')
 

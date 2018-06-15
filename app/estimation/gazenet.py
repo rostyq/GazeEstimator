@@ -23,7 +23,7 @@ def prepare(eye_image, head_pose):
     eye_image_tensor: Image 1x36x60x1, array-like with type float32
     head_pose_tensor: Vector, ndarray[[float, float, float]]
     """
-    return [reshape(eye_image, (-1, 36, 60, 1)) / 255, pose3Dto2D(reshape(head_pose, (-1, 3)))]
+    return [reshape(eye_image, (-1, 72, 120, 1)) / 255, pose3Dto2D(reshape(head_pose, (-1, 3)))]
 
 
 def postprocess(predicted_gaze_tensor):
@@ -38,7 +38,7 @@ def postprocess(predicted_gaze_tensor):
     --------
     predicted_gaze_vector: ndarray[float, float, float]
     """
-    return reshape(gaze2Dto3D(predicted_gaze_tensor), (3,))
+    return reshape(gaze2Dto3D(predicted_gaze_tensor), (1, 3))
 
 
 class GazeNet:

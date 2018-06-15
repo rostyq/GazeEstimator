@@ -261,13 +261,13 @@ class DatasetParser:
 
         eyes, poses, gazes = [], [], []
 
-        for flip, eye in enumerate(self.__EYES):
-
+        for flip, eye in enumerate(self.__EYES[:-1]):
+            print(flip)
             eyes.extend(self.get_images_array(eye=eye, flip=bool(flip), indices=indices))
             poses.extend(self.get_poses_array(indices=indices, flip=bool(flip)))
             gazes.extend(self.get_gazes_array(eye=eye, indices=indices, flip=bool(flip)))
 
-        eyes = array(eyes, subok=True).reshape(-1, 36, 60, 1) / 255
+        eyes = array(eyes, subok=True).reshape(-1, 72, 120, 1) / 255
         poses = pose3Dto2D(array(poses, subok=True))
         gazes = gaze3Dto2D(array(gazes, subok=True))
         return eyes, poses, gazes

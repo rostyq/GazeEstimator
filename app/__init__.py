@@ -1,7 +1,7 @@
 from os import path as Path
 import json
 import os.path
-from app.estimation import GazeNet
+# from app.estimation import GazeNet
 from app.device.screen import Screen
 from app.device.camera import Camera
 from app.parser import ExperimentParser
@@ -127,10 +127,10 @@ def create_learning_dataset(save_path, parser, face_detector, scene, indices=Non
             if len(actors_basler) == 0:
                 continue
             actor_basler = actors_basler[0]
-            actor_basler.set_landmarks3d_gazes(*data['gazes'], scene.screens['wall'])
+            actor_basler.set_landmarks3d_gazes(data['gazes'], scene.screens['wall'])
 
-            left_eye_frame, right_eye_frame = frame_basler.extract_eyes_from_actor(actor_basler,
-                                                                                   resolution=(60, 36),
+            right_eye_frame, left_eye_frame = frame_basler.extract_eyes_from_actor(actor_basler,
+                                                                                   resolution=(120, 72),
                                                                                    equalize_hist=True,
                                                                                    to_grayscale=True)
 

@@ -4,13 +4,12 @@ import numpy as np
 import os
 
 DATASET_PATH = '../normalized_data/'
-
 SESSIONS = sorted(os.listdir(DATASET_PATH))
 print(SESSIONS)
 
-datasetparser = DatasetParser(images='dataset/{index}/eyes/{eye}/image',
-                              poses='dataset/{index}/rotation_norm',
-                              gazes='dataset/{index}/eyes/{eye}/gaze_norm')
+datasetparser = DatasetParser(images='dataset/{index}/0/eyes/{eye}/image',
+                              poses='dataset/{index}/0/rotation_norm',
+                              gazes='dataset/{index}/0/eyes/{eye}/gaze_norm')
 
 val_split_ratio = 0.8
 
@@ -20,7 +19,7 @@ val_arrays = [], [], []
 print(f'train: {SESSIONS[:-3]}')
 print(f'test: {SESSIONS[-3:]}')
 
-for SESS in SESSIONS[:-3]:
+for SESS in SESSIONS[0:1]:
     IMAGES_PATH = os.path.join(DATASET_PATH, SESS)
 
     with open(os.path.join(IMAGES_PATH, 'normalized_dataset.json'), 'r') as session_data:
@@ -46,8 +45,8 @@ gaze_estimator.train(create_new=True,
                      x=[train_eyes, train_poses],
                      y=train_gazes,
                      validation_data=([val_eyes, val_poses], val_gazes),
-                     batch_size=128,
-                     epochs=1000)
+                     batch_size=32,
+                     epochs=5000)
 
 IMAGES_PATH = os.path.join(DATASET_PATH, SESSIONS[-1])
 with open(os.path.join(os.path.join(IMAGES_PATH), 'normalized_dataset.json'), 'r') as session_data:
