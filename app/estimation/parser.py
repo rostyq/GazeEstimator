@@ -1,15 +1,18 @@
 from json import load
 from cv2 import imread
 from cv2 import cvtColor
+from cv2 import flip as cv2flip
 from cv2 import COLOR_BGR2GRAY
 
 from numpy.random import permutation
 from numpy import array
 from numpy import fliplr
+from numpy import tile
 from os import path
 
 from app.estimation.transform import gaze3Dto2D
 from app.estimation.transform import pose3Dto2D
+from app.estimation.transform import angles_between_vectors
 
 
 def get_item(data: dict, path_list: list):
@@ -126,7 +129,7 @@ class DatasetParser:
     def _check_eye(self, eye):
         assert eye in self.__EYES, 'Wrong eye. There are only `left` and `right`.'
 
-    def get_image(self, index, eye, flip=False, **kwargs):
+    def get_image(self, index, eye, flip=False):
         """
         Load specific image of an eye.
 
@@ -155,13 +158,13 @@ class DatasetParser:
                 )
             )
         )
-        image = imread(path_to_image, **kwargs)
+        image = imread(path_to_image)
         if image is None:
             raise Exception(f'Image not found in {path_to_image}')
         else:
             image = cvtColor(image, COLOR_BGR2GRAY)
             if flip:
-                return fliplr(image)
+                return cv2flip(image, 1)
             else:
                 return image
 
@@ -261,13 +264,15 @@ class DatasetParser:
 
         eyes, poses, gazes = [], [], []
 
-        for flip, eye in enumerate(self.__EYES[:-1]):
-            print(flip)
+        for flip, eye in enumerate(self.__EYES):
+            # flip = 0
             eyes.extend(self.get_images_array(eye=eye, flip=bool(flip), indices=indices))
             poses.extend(self.get_poses_array(indices=indices, flip=bool(flip)))
             gazes.extend(self.get_gazes_array(eye=eye, indices=indices, flip=bool(flip)))
 
-        eyes = array(eyes, subok=True).reshape(-1, 72, 120, 1) / 255
-        poses = pose3Dto2D(array(poses, subok=True))
+        eyes = (array(eyes, subok=True).reshape(-1, 72, 120, 1) / 255)
+        angles = angles_between_vectors(array(gazes, subok=True), array(poses, subok=True))
         gazes = gaze3Dto2D(array(gazes, subok=True))
-        return eyes, poses, gazes
+        poses = gaze3Dto2D(array(poses, subok=True))
+        # poses = tile(pose3Dto2D(array(poses, subok=True)).mean(axis=0), (gazes.shape[0], 1))
+        return eyes, poses, gazes, angles

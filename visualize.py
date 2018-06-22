@@ -16,4 +16,4 @@ if __name__ == "__main__":
         extrinsic_params = json.load(f)
 
     scene = Scene(origin_name=ORIGIN_CAM, intrinsic_params=INTRINSIC_PARAMS, extrinsic_params=extrinsic_params)
-    visualize_predict(face_detector, scene, 'checkpoints/model_1740_0.0039.h5')
+    visualize_predict(face_detector, scene, 'checkpoints/filtering_without_brs_both_linear_pose/model_800_0.0010.h5')

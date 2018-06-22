@@ -114,20 +114,23 @@ class Scene:
                 'cams': {name: cam.to_dict() for name, cam in self.cams.items()}}
 
 
-def create_learning_dataset(save_path, parser, face_detector, scene, indices=None):
+def create_learning_dataset(save_path, parser, face_detector, scene, indices=None, gaze=None):
     save_path = Path.join(save_path, 'normalized_data', parser.session_code)
     if not os.path.exists(save_path):
         os.makedirs(save_path, exist_ok=True)
 
     learning_data = {'dataset': [], 'scene': scene.to_dict()}
     for (frames, data), index in parser.snapshots_iterate(indices=indices, progress_bar=True):
-        if data['gazes']:
+        if True:
             frame_basler = frames['basler']
             actors_basler = face_detector.detect_actors(frame_basler, scene.origin)
             if len(actors_basler) == 0:
                 continue
             actor_basler = actors_basler[0]
-            actor_basler.set_landmarks3d_gazes(data['gazes'], scene.screens['wall'])
+            # actor_basler.set_landmarks3d_gazes(data['gazes'], scene.screens['wall'])
+            gazes = {'left': gaze,
+                    'right': gaze}
+            actor_basler.set_landmarks3d_gazes(gazes, scene.screens['wall'])
 
             right_eye_frame, left_eye_frame = frame_basler.extract_eyes_from_actor(actor_basler,
                                                                                    resolution=(120, 72),
@@ -137,9 +140,9 @@ def create_learning_dataset(save_path, parser, face_detector, scene, indices=Non
             cv2.imwrite(Path.join(save_path, f'{index}_left.png'), left_eye_frame)
             cv2.imwrite(Path.join(save_path, f'{index}_right.png'), right_eye_frame)
 
-            learning_data['dataset'].append([actor_basler.to_learning_dataset(f'{index}_left.png',
+            learning_data['dataset'].append(actor_basler.to_learning_dataset(f'{index}_left.png',
                                                                               f'{index}_right.png',
-                                                                              scene.cams['basler'])])
+                                                                              scene.cams['basler']))
 
     with open(Path.join(save_path, 'normalized_dataset.json'), mode='w') as outfile:
         json.dump(learning_data, fp=outfile, indent=2)

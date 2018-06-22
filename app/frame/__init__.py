@@ -29,7 +29,7 @@ class Frame:
         for label, position, color in zip(labels, positions, colors):
             if color is None:
                 color = default_color
-            putText(image, label, tuple(position.astype(int)), FONT_HERSHEY_SIMPLEX, size, color, 4, lineType=3)
+            putText(image, label, tuple((position+14).astype(int)), FONT_HERSHEY_SIMPLEX, size, color, 4, lineType=3)
 
     @staticmethod
     def draw_lines(image, start_points, end_points, default_color=(255, 0, 0), thickness=2):

@@ -2,6 +2,7 @@ from app.device import SceneObj
 from numpy import cross
 from numpy import array
 from numpy.linalg import norm
+from numpy.linalg import inv
 from app.parser import quaternion_to_angle_axis, face_point_to_array
 from numpy import sum, abs, sqrt
 from scipy.optimize import minimize
@@ -34,19 +35,19 @@ class Actor(SceneObj):
         return {
             'eyes': {
                 'left': {
-                    'gaze_norm': camera.vectors_to_self(
-                        self.landmarks3D['eyes']['left']['gaze']/norm(self.landmarks3D['eyes']['left']['gaze'])).tolist(),
+                    'gaze_norm': (inv(camera.get_rotation_matrix()) @
+                                  (self.landmarks3D['eyes']['left']['gaze']/norm(self.landmarks3D['eyes']['left']['gaze'])).reshape(3, -1)).tolist(),
                     'image': img_left_name,
                     'center': camera.vectors_to_self(self.landmarks3D['eyes']['left']['center']).tolist()
                 },
                 'right': {
-                    'gaze_norm': camera.vectors_to_self(
-                        self.landmarks3D['eyes']['right']['gaze']/norm(self.landmarks3D['eyes']['right']['gaze'])).tolist(),
+                    'gaze_norm': (inv(camera.get_rotation_matrix()) @
+                                 (self.landmarks3D['eyes']['right']['gaze']/norm(self.landmarks3D['eyes']['right']['gaze'])).reshape(3, -1)).tolist(),
                     'image': img_rigth_name,
                     'center': camera.vectors_to_self(self.landmarks3D['eyes']['right']['center']).tolist()
                 }
             },
-            'rotation_norm': camera.vectors_to_self(self.get_norm_vector_to_face()/norm(self.get_norm_vector_to_face())).tolist(),
+            'rotation_norm': (inv(camera.get_rotation_matrix()) @ (self.get_norm_vector_to_face()/norm(self.get_norm_vector_to_face())).reshape(3, -1)) .tolist(),
             'nose_chin_distance': self.nose_chin_distance,
             'name': self.name
         }

@@ -12,7 +12,7 @@ datasetparser = DatasetParser(images='dataset/{index}/eyes/{eye}/image',
                               poses='dataset/{index}/rotation_norm',
                               gazes='dataset/{index}/eyes/{eye}/gaze_norm')
 
-gaze_estimator = GazeNet().init('./checkpoints/model_700_0.0030.h5')  # .init(PATH_TO_ESTIMATOR)
+gaze_estimator = GazeNet().init('./checkpoints/custom_loss_mean_pose/model_3900_0.1439.h5')  # .init(PATH_TO_ESTIMATOR)
 
 for SESSION in SESSIONS:
     IMAGES_PATH = os.path.join(DATASET_PATH, SESSION)

@@ -19,4 +19,4 @@ if __name__ == "__main__":
         extrinsic_params = json.load(f)
 
     scene = Scene(origin_name=ORIGIN_CAM, intrinsic_params=INTRINSIC_PARAMS, extrinsic_params=extrinsic_params)
-    experiment_without_BRS('../', face_detector, scene, 'rostyslav_bohomaz_5', size='_72_120', dataset_size=100)
+    experiment_without_BRS('../', face_detector, scene, 'valik_melnichuk_2', size='_72_120', dataset_size=100)

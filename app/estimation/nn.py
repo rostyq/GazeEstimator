@@ -24,6 +24,8 @@ from numpy import pi
 import tensorflow as tf
 from tensorflow.python import debug as tf_debug
 
+from os import path as Path
+
 debug = False
 if debug:
     sess = K.get_session()
@@ -56,6 +58,12 @@ def angle_accuracy(target, predicted):
     return tf.reduce_mean(calc_angle(predicted, target), name='mean_angle')
 
 
+def custom_loss(y_true_and_weights, y_pred):
+   y_true, y_weights = y_true_and_weights[:,:-1], y_true_and_weights[:,-1:]
+   loss = K.reshape(K.sum(K.square(y_pred - y_true), axis=1), (1, -1))
+   return K.dot(2 * pi/(y_weights), loss)/K.cast(K.shape(y_true)[0], 'float32')
+
+
 def create_model(learning_rate=1e-2, seed=None):
 
     # input
@@ -66,9 +74,9 @@ def create_model(learning_rate=1e-2, seed=None):
 
     # convolutional
     conv1 = Conv2D(
-        filters=2,
+        filters=4,
         activation='relu',
-        kernel_size=(3, 3),
+        kernel_size=(5, 5),
         strides=(1, 1),
         kernel_initializer=RandomNormal(mean=0.0, stddev=0.1, seed=seed),
         bias_initializer='zeros',
@@ -76,8 +84,8 @@ def create_model(learning_rate=1e-2, seed=None):
         name='conv1'
         )(input_img)
     pool1 = MaxPool2D(
-        pool_size=(2, 2),
-        strides=(2, 2),
+        pool_size=(4, 4),
+        strides=(4, 4),
         padding='valid',
         name='maxpool1'
         )(conv1)
@@ -86,7 +94,7 @@ def create_model(learning_rate=1e-2, seed=None):
         activation='relu',
         kernel_size=(5, 5),
         strides=(1, 1),
-        kernel_initializer=RandomNormal(mean=0.0, stddev=0.01, seed=seed),
+        kernel_initializer=RandomNormal(mean=0.0, stddev=0.1, seed=seed),
         bias_initializer='zeros',
         # kernel_regularizer=regularizer,
         name='conv2'
@@ -97,29 +105,34 @@ def create_model(learning_rate=1e-2, seed=None):
         padding='valid',
         name='maxpool2'
         )(conv2)
-    conv3 = Conv2D(
-        filters=16,
-        activation='relu',
-        kernel_size=(7, 7),
-        strides=(1, 1),
-        kernel_initializer=RandomNormal(mean=0.0, stddev=0.01, seed=seed),
-        bias_initializer='zeros',
-        # kernel_regularizer=regularizer,
-        name='conv3'
-        )(pool2)
-    pool3 = MaxPool2D(
-        pool_size=(2, 2),
-        strides=(2, 2),
-        padding='valid',
-        name='maxpool3'
-        )(conv3)
+    # conv3 = Conv2D(
+    #     filters=16,
+    #     activation='relu',
+    #     kernel_size=(5, 5),
+    #     strides=(1, 1),
+    #     kernel_initializer=RandomNormal(mean=0.0, stddev=0.01, seed=seed),
+    #     bias_initializer='zeros',
+    #     # kernel_regularizer=regularizer,
+    #     name='conv3'
+    #     )(pool2)
+    # pool3 = MaxPool2D(
+    #     pool_size=(2, 2),
+    #     strides=(2, 2),
+    #     padding='valid',
+    #     name='maxpool3'
+    #     )(conv3)
 
-    flatt = Flatten(name='flatt')(pool3)
+    flatt = Flatten(name='flatt')(pool2)
+
+
+    # fc_hp = Dense(6, activation='tanh', kernel_regularizer=regularizer)(input_pose)
+
+    # concatanate with head pose
 
     # inner product 1
     dense1 = Dense(
-        units=100,
-        activation='relu',
+        units=20,
+        activation='tanh',
         kernel_initializer=glorot_uniform(seed=seed),
         bias_initializer='zeros',
         kernel_regularizer=regularizer,
@@ -127,23 +140,21 @@ def create_model(learning_rate=1e-2, seed=None):
         )(flatt)
 
     # dense2 = Dense(
-    #     units=250,
-    #     activation='relu',
+    #     units=100,
+    #     activation='softmax',
     #     kernel_initializer=glorot_uniform(seed=seed),
     #     bias_initializer='zeros',
     #     kernel_regularizer=regularizer,
     #     name='fc2'
     # )(dense1)
 
-    # concatanate with head pose
     cat = Concatenate(axis=-1, name='concat')([dense1, input_pose])
-
-    #dropout = Dropout(rate=0.1)(cat)
 
     # inner product 2
     dense3 = Dense(
         units=2,
         kernel_initializer=glorot_uniform(seed=seed),
+        activation='linear',
         bias_initializer='zeros',
         name='fc3'
         )(cat)
@@ -158,37 +169,26 @@ def create_model(learning_rate=1e-2, seed=None):
 
     ### COMPILE MODEL ###
     model = Model([input_img, input_pose], dense3)
-    model.compile(optimizer=optimizer, loss="mean_squared_error", metrics=[angle_accuracy])
+    model.compile(optimizer='adam', loss='mse', metrics=[angle_accuracy])
     print(model.summary())
     return model
 
-def create_callbacks(path_to_save):
+
+def create_callbacks(path_to_save, save_period=100):
 
     ### CALLBACKS ###
     tbCallBack = TensorBoard(
-        log_dir='./log/tblog',
+        log_dir=path_to_save,
         histogram_freq=0,
         write_graph=True,
-        write_images=True,
-        write_grads=True
+        write_images=False,
+        write_grads=False
         )
     checkpoint = ModelCheckpoint(
-        path_to_save+'/model_{epoch}_{val_loss:.4f}.h5',
+        Path.join(path_to_save, 'model_{epoch}_{val_loss:.4f}.h5'),
         monitor='val_loss',
-        period=20
+        period=save_period
         )
-    reduce_lr = ReduceLROnPlateau(
-        monitor='val_loss',
-        factor=0.1,
-        epsilon=1e-4,
-        patience=4,
-        verbose=1
-        )
-    # earlystop = EarlyStopping(
-    #     monitor='val_loss',
-    #     min_delta=1e-5,
-    #     patience=20,
-    #     verbose=1)
     terminate = TerminateOnNaN()
 
     return [tbCallBack, checkpoint, terminate]
