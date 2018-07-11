@@ -13,6 +13,7 @@ from cv2 import line
 
 
 class Frame:
+
     def __init__(self, camera, image):
         self.camera = camera
         self.image = image.astype('uint8')

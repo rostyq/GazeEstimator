@@ -1,3 +1,5 @@
+from json import load
+
 INTRINSIC_PARAMS = {
     'CAMERAS': {
         'color': {
@@ -54,3 +56,18 @@ PATH_TO_ESTIMATOR = './app/bin/estimator.h5'  # './checkpoints/model_200_0.0028.
 PATH_TO_FACE_POINTS = './app/bin/face_landmarks.dat'
 PATH_TO_FACE_MODEL = './app/bin/face_points_tutorial.mat'
 PATH_TO_HAARCASCADE_MODEL = './app/bin/haarcascade_frontalface_default.xml'
+PATH_TO_EXTRINSIC_PARAMS = './extrinsic_params.json'
+
+ACTOR_DETECTOR = {
+    'path_to_face_model': PATH_TO_FACE_MODEL,
+    'path_to_face_points': PATH_TO_FACE_POINTS,
+    'path_to_hc_model': PATH_TO_HAARCASCADE_MODEL,
+    'factor': 1,
+    'scale': 1.3,
+    'minNeighbors': 5,
+    'chin_nose_distance': 0.065
+}
+
+with open(PATH_TO_EXTRINSIC_PARAMS) as f:
+    EXTRINSIC_PARAMS = load(f)
+

@@ -11,13 +11,13 @@ from app.parser import quaternion_to_angle_axis
 from scipy.optimize import minimize
 
 
-class Actor(SceneObj):
+class Person(SceneObj):
 
     def __init__(self, name, origin):
         super().__init__(name=name, origin=origin)
 
         # landmarks in real space
-        self.landmarks3D = {
+        self.landmarks_3d = {
             'eyes': {
                 'left': {
                     'rectangle': None,
@@ -35,7 +35,7 @@ class Actor(SceneObj):
         }
 
         # raw data from dlib
-        self.landmarks2D = None
+        self.raw_dlib_landmarks = None
 
         # average parameters of face
         self.nose_chin_distance = None
@@ -46,15 +46,15 @@ class Actor(SceneObj):
             'eyes': {
                 'left': {
                     'gaze_norm': (inv(camera.get_rotation_matrix()) @
-                                  (self.landmarks3D['eyes']['left']['gaze']/norm(self.landmarks3D['eyes']['left']['gaze'])).reshape(3, -1)).tolist(),
+                                  (self.landmarks_3d['eyes']['left']['gaze'] / norm(self.landmarks_3d['eyes']['left']['gaze'])).reshape(3, -1)).tolist(),
                     'image': img_left_name,
-                    'center': camera.vectors_to_self(self.landmarks3D['eyes']['left']['center']).tolist()
+                    'center': camera.vectors_to_self(self.landmarks_3d['eyes']['left']['center']).tolist()
                 },
                 'right': {
                     'gaze_norm': (inv(camera.get_rotation_matrix()) @
-                                 (self.landmarks3D['eyes']['right']['gaze']/norm(self.landmarks3D['eyes']['right']['gaze'])).reshape(3, -1)).tolist(),
+                                  (self.landmarks_3d['eyes']['right']['gaze'] / norm(self.landmarks_3d['eyes']['right']['gaze'])).reshape(3, -1)).tolist(),
                     'image': img_rigth_name,
-                    'center': camera.vectors_to_self(self.landmarks3D['eyes']['right']['center']).tolist()
+                    'center': camera.vectors_to_self(self.landmarks_3d['eyes']['right']['center']).tolist()
                 }
             },
             'rotation_norm': (inv(camera.get_rotation_matrix()) @ (self.get_norm_vector_to_face()/norm(self.get_norm_vector_to_face())).reshape(3, -1)) .tolist(),
@@ -74,14 +74,14 @@ class Actor(SceneObj):
         def objective_function(center, eye):
             return sum(abs(norm(center - face_points[eye, :], axis=1) - self.eyeball_radius))
 
-        self.landmarks3D['eyes']['left']['rectangle'] = face_points[[1080, 201, 289, 151]]
-        self.landmarks3D['eyes']['right']['rectangle'] = face_points[[1084, 847, 947, 772]]
-        self.landmarks3D['eyes']['left']['center'] = minimize(lambda x: objective_function(x, left_eye_center),
+        self.landmarks_3d['eyes']['left']['rectangle'] = face_points[[1080, 201, 289, 151]]
+        self.landmarks_3d['eyes']['right']['rectangle'] = face_points[[1084, 847, 947, 772]]
+        self.landmarks_3d['eyes']['left']['center'] = minimize(lambda x: objective_function(x, left_eye_center),
                                                                x0=face_points[left_eye_center[0]]).x
-        self.landmarks3D['eyes']['right']['center'] = minimize(lambda x: objective_function(x, right_eye_center),
-                                                               x0=face_points[right_eye_center[0]]).x
-        self.landmarks3D['nose'] = face_points[18]
-        self.landmarks3D['chin'] = face_points[4]
+        self.landmarks_3d['eyes']['right']['center'] = minimize(lambda x: objective_function(x, right_eye_center),
+                                                                x0=face_points[right_eye_center[0]]).x
+        self.landmarks_3d['nose'] = face_points[18]
+        self.landmarks_3d['chin'] = face_points[4]
         return self
 
     def set_dlib_landmarks3d(self, face_model_origin_space):
@@ -92,35 +92,40 @@ class Actor(SceneObj):
         right_eye_rectangle_origin_space = face_model_origin_space[4:8]
         left_eye_rectangle_origin_space = face_model_origin_space[8:12]
 
-        self.landmarks3D['eyes']['left']['rectangle'] = left_eye_rectangle_origin_space
-        self.landmarks3D['eyes']['right']['rectangle'] = right_eye_rectangle_origin_space
-        self.landmarks3D['nose'] = nose_origin_space
-        self.landmarks3D['chin'] = chin_origin_space
-        self.landmarks3D['eyes']['left']['center'] = left_eye_center_origin_space
-        self.landmarks3D['eyes']['right']['center'] = right_eye_center_origin_space
+        self.landmarks_3d['eyes']['left']['rectangle'] = left_eye_rectangle_origin_space
+        self.landmarks_3d['eyes']['right']['rectangle'] = right_eye_rectangle_origin_space
+        self.landmarks_3d['nose'] = nose_origin_space
+        self.landmarks_3d['chin'] = chin_origin_space
+        self.landmarks_3d['eyes']['left']['center'] = left_eye_center_origin_space
+        self.landmarks_3d['eyes']['right']['center'] = right_eye_center_origin_space
 
     def set_landmarks3d_gazes(self, gazes, screen):
         left_gaze_point_origin_space = screen.point_to_origin(*gazes['left']).reshape(3)
         right_gaze_point_origin_space = screen.point_to_origin(*gazes['right']).reshape(3)
-        self.landmarks3D['eyes']['left']['gaze'] = left_gaze_point_origin_space - self.landmarks3D['eyes']['left']['center']
-        self.landmarks3D['eyes']['right']['gaze'] = right_gaze_point_origin_space - self.landmarks3D['eyes']['right']['center']
+        self.landmarks_3d['eyes']['left']['gaze'] = left_gaze_point_origin_space - self.landmarks_3d['eyes']['left']['center']
+        self.landmarks_3d['eyes']['right']['gaze'] = right_gaze_point_origin_space - self.landmarks_3d['eyes']['right']['center']
 
     def set_rotation(self, face_rotation_quaternion):
         self.rotation = quaternion_to_angle_axis(face_rotation_quaternion)
         return self
 
     def set_translation(self, key='nose'):
-        self.translation = self.landmarks3D[key]
+        self.translation = self.landmarks_3d[key]
         return self
 
     def get_norm_vector_to_face(self):
-        return cross(self.landmarks3D['chin'] - self.landmarks3D['eyes']['left']['center'],
-                     self.landmarks3D['chin'] - self.landmarks3D['eyes']['right']['center'])
+        return cross(self.landmarks_3d['chin'] - self.landmarks_3d['eyes']['left']['center'],
+                     self.landmarks_3d['chin'] - self.landmarks_3d['eyes']['right']['center'])
 
     def get_gaze_line(self, gaze_vector, key):
         return (
-            self.landmarks3D['eyes'][key]['center'] + gaze_vector.reshape(3),
-            self.landmarks3D['eyes'][key]['center']
+            self.landmarks_3d['eyes'][key]['center'] + gaze_vector.reshape(3),
+            self.landmarks_3d['eyes'][key]['center']
         )
 
-
+    def set_gazes_to_mark(self, point):
+        for eye in ['left', 'right']:
+            gaze = point - self.landmarks_3d['eyes'][eye]['center']
+            gaze = gaze / norm(gaze)
+            self.landmarks_3d['eyes'][eye]['gaze'] = gaze
+        return self
