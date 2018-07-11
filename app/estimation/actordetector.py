@@ -34,9 +34,9 @@ class ActorDetector:
         self.detector = CascadeClassifier(path_to_hc_model).detectMultiScale
         self.scale = scale
         self.minNeighbors = minNeighbors
-        self.predictor = shape_predictor(path_to_face_model)
+        self.predictor = shape_predictor(path_to_face_points)
         self.factor = factor
-        self.model_points = loadmat(path_to_face_points)['model'] * array([-1, -1, 1])
+        self.model_points = loadmat(path_to_face_model)['model'] * array([-1, -1, 1])
         scale = chin_nose_distance / self.model_points[1, 1]
         self.model_points = self.model_points * scale
         self.eye_height = 60 * scale
@@ -122,6 +122,10 @@ class ActorDetector:
                                                                          frame.camera).T
 
             actor = Actor(name=f'Actor{i}', origin=origin)
+
+            # save raw data from dlib to actor object
+            actor.landmarks2D = landmarks2D[i]
+
             actor.set_dlib_landmarks3d(face_model_origin_space)
             actor.rotation = frame.camera.rotation + rotation_vector
             actor.nose_chin_distance = self.nose_chin_distance

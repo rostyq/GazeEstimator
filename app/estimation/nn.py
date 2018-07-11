@@ -2,9 +2,11 @@ from keras.layers import Input
 from keras.layers import Dense
 from keras.layers import Concatenate
 from keras.layers import Flatten
+from keras.layers import Dropout
+
 from keras.layers.convolutional import Conv2D
 from keras.layers.pooling import MaxPool2D
-from keras.layers import Dropout
+from keras.layers.normalization import BatchNormalization
 
 from keras.initializers import RandomNormal
 from keras.initializers import glorot_uniform
@@ -13,7 +15,6 @@ from keras.regularizers import l2
 
 from keras.callbacks import TensorBoard
 from keras.callbacks import ModelCheckpoint
-from keras.callbacks import ReduceLROnPlateau
 from keras.callbacks import TerminateOnNaN
 
 from keras.optimizers import SGD
@@ -59,12 +60,12 @@ def angle_accuracy(target, predicted):
 
 
 def custom_loss(y_true_and_weights, y_pred):
-   y_true, y_weights = y_true_and_weights[:,:-1], y_true_and_weights[:,-1:]
+   y_true, y_weights = y_true_and_weights[:, :-1], y_true_and_weights[:, -1:]
    loss = K.reshape(K.sum(K.square(y_pred - y_true), axis=1), (1, -1))
-   return K.dot(2 * pi/(y_weights), loss)/K.cast(K.shape(y_true)[0], 'float32')
+   return K.dot(2 * pi / y_weights, loss)/K.cast(K.shape(y_true)[0], 'float32')
 
 
-def create_model(learning_rate=1e-2, seed=None):
+def create_model(learning_rate=1e-1, seed=None):
 
     # input
     input_img = Input(shape=(72, 120, 1), name='InputImage')
@@ -74,7 +75,7 @@ def create_model(learning_rate=1e-2, seed=None):
 
     # convolutional
     conv1 = Conv2D(
-        filters=4,
+        filters=32,
         activation='relu',
         kernel_size=(5, 5),
         strides=(1, 1),
@@ -90,7 +91,7 @@ def create_model(learning_rate=1e-2, seed=None):
         name='maxpool1'
         )(conv1)
     conv2 = Conv2D(
-        filters=8,
+        filters=64,
         activation='relu',
         kernel_size=(5, 5),
         strides=(1, 1),
@@ -105,59 +106,59 @@ def create_model(learning_rate=1e-2, seed=None):
         padding='valid',
         name='maxpool2'
         )(conv2)
-    # conv3 = Conv2D(
-    #     filters=16,
-    #     activation='relu',
-    #     kernel_size=(5, 5),
-    #     strides=(1, 1),
-    #     kernel_initializer=RandomNormal(mean=0.0, stddev=0.01, seed=seed),
-    #     bias_initializer='zeros',
-    #     # kernel_regularizer=regularizer,
-    #     name='conv3'
-    #     )(pool2)
-    # pool3 = MaxPool2D(
-    #     pool_size=(2, 2),
-    #     strides=(2, 2),
-    #     padding='valid',
-    #     name='maxpool3'
-    #     )(conv3)
+    conv3 = Conv2D(
+        filters=96,
+        activation='relu',
+        kernel_size=(5, 5),
+        strides=(1, 1),
+        kernel_initializer=RandomNormal(mean=0.0, stddev=0.01, seed=seed),
+        bias_initializer='zeros',
+        # kernel_regularizer=regularizer,
+        name='conv3'
+        )(pool2)
+    pool3 = MaxPool2D(
+        pool_size=(2, 2),
+        strides=(2, 2),
+        padding='valid',
+        name='maxpool3'
+        )(conv3)
 
-    flatt = Flatten(name='flatt')(pool2)
-
-
-    # fc_hp = Dense(6, activation='tanh', kernel_regularizer=regularizer)(input_pose)
+    flatt = Flatten(name='flatt')(pool3)
 
     # concatanate with head pose
+    cat = Concatenate(axis=-1, name='concat')([flatt, input_pose])
+
+    batch_norm = BatchNormalization()(cat)
 
     # inner product 1
     dense1 = Dense(
-        units=20,
+        units=100,
         activation='tanh',
         kernel_initializer=glorot_uniform(seed=seed),
         bias_initializer='zeros',
         kernel_regularizer=regularizer,
         name='fc1'
-        )(flatt)
+        )(batch_norm)
 
-    # dense2 = Dense(
-    #     units=100,
-    #     activation='softmax',
-    #     kernel_initializer=glorot_uniform(seed=seed),
-    #     bias_initializer='zeros',
-    #     kernel_regularizer=regularizer,
-    #     name='fc2'
-    # )(dense1)
+    dense2 = Dense(
+        units=50,
+        activation='tanh',
+        kernel_initializer=glorot_uniform(seed=seed),
+        bias_initializer='zeros',
+        kernel_regularizer=regularizer,
+        name='fc2'
+    )(dense1)
 
-    cat = Concatenate(axis=-1, name='concat')([dense1, input_pose])
+    drop = Dropout(0.3)(dense2)
 
     # inner product 2
     dense3 = Dense(
         units=2,
         kernel_initializer=glorot_uniform(seed=seed),
-        activation='linear',
+        activation='tanh',
         bias_initializer='zeros',
         name='fc3'
-        )(cat)
+        )(drop)
 
     ### OPTIMIZER ###
     optimizer = SGD(
@@ -169,7 +170,7 @@ def create_model(learning_rate=1e-2, seed=None):
 
     ### COMPILE MODEL ###
     model = Model([input_img, input_pose], dense3)
-    model.compile(optimizer='adam', loss='mse', metrics=[angle_accuracy])
+    model.compile(optimizer=optimizer, loss='mse', metrics=[angle_accuracy])
     print(model.summary())
     return model
 

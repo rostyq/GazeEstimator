@@ -35,36 +35,43 @@ def create_gaze_video(save_path, parser, face_detector, scene, cam_name, indices
     # model = GazeNet().init('checkpoints/model_700_0.0025.h5')
 
     def get_web_cam_image(frames, data):
-        if data['gazes']:
+        if data['face_points']:
             frame_basler = frames['basler']
+            frame_kinect = frames['color']
             actors_basler = face_detector.detect_actors(frame_basler, scene.origin)
+            actor_kinect = Actor('kinect', origin=scene.origin)
+            actor_kinect.set_kinect_landmarks3d(data['face_points'])
             if len(actors_basler) == 0:
                 return None
             actor_basler = actors_basler[0]
-            actor_basler.set_landmarks3d_gazes(data['gazes'], scene.screens['wall'])
+            # actor_basler.set_landmarks3d_gazes(data['gazes'], scene.screens['wall'])
 
             # Estimation
-            left_eye = frame_basler.extract_eyes_from_actor(actor_basler, equalize_hist=True, to_grayscale=True)[0]
-            left_gaze_line_basler = actor_basler.get_gaze_line(actor_basler.landmarks3D['eyes']['left']['gaze'], key='left')
-            right_gaze_line_basler = actor_basler.get_gaze_line(actor_basler.landmarks3D['eyes']['right']['gaze'], key='right')
-            # gaze_line_estimated_basler = [
-            #     model.estimate_gaze(left_eye, actor_basler.get_norm_vector_to_face()) + actor_basler.landmarks3D['eyes']['left']['center'],
-            #     actor_basler.landmarks3D['eyes']['left']['center']
-            # ]
+            # left_gaze_line_basler = actor_basler.get_gaze_line(actor_basler.landmarks3D['eyes']['left']['gaze'], key='left')
+            # right_gaze_line_basler = actor_basler.get_gaze_line(actor_basler.landmarks3D['eyes']['right']['gaze'], key='right')
             face_line_basler = [actor_basler.landmarks3D['nose'] + 100 * actor_basler.get_norm_vector_to_face(),
                                 actor_basler.landmarks3D['nose']]
-            left_gaze_intersection = scene.screens['wall'].get_intersection_point_origin(left_gaze_line_basler)
-            right_gaze_intersection = scene.screens['wall'].get_intersection_point_origin(right_gaze_line_basler)
-            face_intersection = scene.screens['wall'].get_intersection_point_origin(face_line_basler)
+            face_line_color = [actor_kinect.landmarks3D['nose'] + 100 * actor_kinect.get_norm_vector_to_face(),
+                               actor_kinect.landmarks3D['nose']]
+
+            # left_gaze_intersection = scene.screens['wall'].get_intersection_point_origin(left_gaze_line_basler)
+            # right_gaze_intersection = scene.screens['wall'].get_intersection_point_origin(right_gaze_line_basler)
+            face_basler_intersection = scene.screens['wall'].get_intersection_point_origin(face_line_basler)
+            face_color_intersection = scene.screens['wall'].get_intersection_point_origin(face_line_color)
+
+            left_gaze_line_est = actor_kinect.get_gaze_line(data['est_gazes']['gazeLeft'], key='left')
+            right_gaze_line_est = actor_kinect.get_gaze_line(data['est_gazes']['gazeRight'], key='right')
+            left_est_intersection = wall.get_intersection_point_origin(left_gaze_line_est)
+            right_est_intersection = wall.get_intersection_point_origin(right_gaze_line_est)
             # gaze_estimated_intersection = scene.screens['wall'].get_intersection_point_origin(gaze_line_estimated_basler)
 
             frame = frames[cam_name]
-            frame.project_vectors(left_gaze_intersection)
-            frame.project_vectors(face_intersection, default_color=(0, 0, 255))
-            # frame.project_vectors(gaze_estimated_intersection, default_color=(0, 255, 0))
-            frame.project_lines(*left_gaze_line_basler, default_color=(0, 255, 0))
-            frame.project_lines(*right_gaze_line_basler, default_color=(0, 255, 0))
-            frame.project_lines(*face_line_basler, default_color=(0, 0, 255))
+            # frame.project_lines(*face_line_basler, default_color=(255, 0, 255))
+            frame.project_lines(*face_line_color, default_color=(0, 0, 255))
+            frame.project_lines(*left_gaze_line_est, default_color=(255, 255, 255))
+            frame.project_lines(*right_gaze_line_est, default_color=(255, 255, 255))
+            frame.project_vectors(np.array([left_est_intersection, right_est_intersection]),
+                                      default_color=(0, 255, 255))
             frame.project_vectors(wall_points.reshape(-1, 3))
             return cv2.resize(frame.image, resolution)
 
@@ -188,7 +195,7 @@ def show_point(point, scene):
 def ispressed(button, delay=1):
     return cv2.waitKey(delay) == button
 
-def init_experiment(save_path, session_code, size, scene, testing=False, path_to_model=None):
+def init_experiment(save_path, session_code, size, scene, testing=False, path_to_model=None, screen='wall'):
     if not testing:
         # Save path
         save_path = Path.join(save_path, 'normalized_data' + size, session_code)
@@ -200,14 +207,14 @@ def init_experiment(save_path, session_code, size, scene, testing=False, path_to
 
     # Model init
     # model = GazeNet().init('checkpoints/model_500_0.0039.h5')
-    wall = scene.screens['wall']
+    wall = scene.screens[screen]
 
     # Basler connection
     basler = connect_basler()
 
     # Window init
     cv2.namedWindow("experiment", cv2.WINDOW_NORMAL)
-    cv2.setWindowProperty("experiment", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    # cv2.setWindowProperty("experiment", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     # Gazepoint connection
     tracker = None
@@ -226,7 +233,7 @@ def init_experiment(save_path, session_code, size, scene, testing=False, path_to
 
 def experiment_without_BRS(save_path, face_detector, scene, session_code, dataset_size=1000, size=''):
 
-    learning_data, wall, basler, tracker, _, save_path = init_experiment(save_path, session_code, size, scene)
+    learning_data, wall, basler, tracker, _, save_path = init_experiment(save_path, session_code, size, scene, screen='screen')
     index = 0
     lag = 1
     frames_basler = []
@@ -243,7 +250,7 @@ def experiment_without_BRS(save_path, face_detector, scene, session_code, datase
             gaze_time = time.time()
             log.info(f'GazePoint time: {gaze_time}, basler time: {frame_time}, difference: {frame_time - gaze_time}')
             if sample and frame_basler is not None and int(sample[-lag]['FPOGV']):
-                print(f'Lag: {len(sample)} gazepoint samples')
+                print(f'Lag: {len(sample)} gazepoint samples. Frame {index}')
                 gaze = {
                     'right': tuple(map(float, (sample[-lag]['LPOGX'], sample[-lag]['LPOGY']))),
                     'left': tuple(map(float, (sample[-lag]['RPOGX'], sample[-lag]['RPOGY'])))
@@ -257,6 +264,7 @@ def experiment_without_BRS(save_path, face_detector, scene, session_code, datase
     finally:
         basler.close()
         tracker.stop_recording()
+        tracker.close()
         cv2.destroyAllWindows()
 
     # Processing
@@ -297,12 +305,12 @@ def experiment_without_BRS(save_path, face_detector, scene, session_code, datase
     print(f"Dataset saved to {save_path}. Number of useful snapshots: {len(learning_data['dataset'])}")
 
 
-def visualize_predict(face_detector, scene, path_to_model):
+def visualize_predict(face_detector, scene, path_to_model, back=None):
 
     _, wall, basler, tracker, model, _ = init_experiment(save_path=None, session_code=None, size='', scene=scene, testing=True,
-                                                      path_to_model=path_to_model)
+                                                      path_to_model=path_to_model, screen='wall')
     try:
-        while not ispressed(1):
+        while not ispressed(30):
             # sample = tracker.sample()
             frame_basler = next(basler.grab_images(1))
             if frame_basler is not None:
@@ -325,7 +333,6 @@ def visualize_predict(face_detector, scene, path_to_model):
                     # gaze_line_basler = actor_basler.get_gaze_line(actor_basler.landmarks3D['eyes']['left']['gaze'])
                     # gaze_intersection = wall.get_intersection_point_in_pixels(gaze_line_basler)
                     norm_to_face = np.linalg.inv(frame_basler.camera.get_rotation_matrix()) @ (actor_basler.get_norm_vector_to_face() / norm(actor_basler.get_norm_vector_to_face())).reshape(3, -1)
-                    print(norm_to_face)
                     gaze_line_left_estimated_basler = actor_basler.get_gaze_line(
                         frame_basler.camera.get_rotation_matrix() @ model.estimate_gaze(left_eye_frame, norm_to_face).reshape(3, -1),
                         key='left'
@@ -342,14 +349,14 @@ def visualize_predict(face_detector, scene, path_to_model):
                     gaze_right_estimated_intersection = wall.get_intersection_point_in_pixels(gaze_line_right_estimated_basler)
                     gaze_estimated_intersection = np.array([gaze_left_estimated_intersection, gaze_right_estimated_intersection]).mean(axis=0)
                     face_intersection = wall.get_intersection_point_in_pixels(face_line_basler)
-                    image = wall.generate_image_with_circles(np.array([face_intersection, gaze_estimated_intersection,
+                    image = wall.generate_image_with_circles(np.array([face_intersection, gaze_estimated_intersection,#]),
                                                                        gaze_left_estimated_intersection,
                                                                        gaze_right_estimated_intersection]),
                                                              padding=0,
                                                              labels=[f'FN{i}', f'GA{i}',
                                                                      f'GL{i}', f'GR{i}'],
-                                                             colors=[(255, 255, 255), (255, 0, 0), (0, 0, 255), (0, 255, 0)],
-                                                             image=image)
+                                                             colors=[(0, 0, 0), (255, 0, 0), (0, 0, 255), (0, 255, 0)],
+                                                             image=back)
                     image[:72, :120], image[:72, 120:240] = cv2.cvtColor(right_eye_frame, cv2.COLOR_GRAY2BGR), \
                                                             cv2.cvtColor(left_eye_frame, cv2.COLOR_GRAY2BGR)
 

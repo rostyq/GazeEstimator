@@ -13,8 +13,8 @@ from collections import OrderedDict
 from tqdm import tqdm
 
 
-def face_point_to_array(dct):
-    return array([dct['X'], dct['Y'], dct['Z']]).reshape(3) * array([-1, -1, 1])
+def dict_point_to_array(dct, flip_vector=array([1, 1, 1])):
+    return array([dct['X'], dct['Y'], dct['Z']]).reshape(3) * flip_vector
 
 
 def quaternion_to_angle_axis(quaternion):
@@ -59,13 +59,14 @@ class ExperimentParser:
             cams_dict = {
                 # 'color': mapping[' Kinect.Color'],
                 'basler': mapping[' InfraredCamera'],
-                # 'web_cam': mapping[' WebCamera'],
+                'web_cam': mapping[' WebCamera'],
                 # 'ir': mapping[' Kinect.Infrared']
             }
             data_dict = {
-                # 'face_poses': mapping[' Kinect.Face'],
+                # 'face_poses': mapping[' Kinect.Body'],
                 # 'gazes': mapping[' Gazepoint'],
-                # 'face_points': mapping[' Kinect.FaceVertices']
+                'est_gazes': 'cam_100',
+                'face_points': mapping[' Kinect.FaceVertices']
             }
             return cams_dict, data_dict
 
@@ -89,7 +90,7 @@ class ExperimentParser:
     def load_json_data(file, data_key):
         if data_key is 'face_points':
             face_points = OrderedDict(bson.loads(file.read()))
-            return [face_point_to_array(face_points[point]) for point in face_points.keys()]
+            return [dict_point_to_array(face_points[point], flip_vector=array([-1, -1, 1])) for point in face_points.keys()]
         if data_key is 'face_poses':
             return [quaternion_to_angle_axis(face_pose['FaceRotationQuaternion']) for face_pose in bson.loads(file.read())]
         if data_key is 'gazes':
@@ -97,15 +98,20 @@ class ExperimentParser:
             if not gaze or not 'REC' in gaze.keys() or not 'FPOGV' in gaze['REC'].keys() or int(gaze['REC']['FPOGV']) == 0:
             # if int(gaze['REC']['FPOGV']):
                 return None
-            return {'left' : tuple(map(float, (gaze['REC']['LPOGX'], gaze['REC']['LPOGY']))),
-                    'right' : tuple(map(float, (gaze['REC']['RPOGX'], gaze['REC']['RPOGY'])))}
+            return {'left': tuple(map(float, (gaze['REC']['LPOGX'], gaze['REC']['LPOGY']))),
+                    'right': tuple(map(float, (gaze['REC']['RPOGX'], gaze['REC']['RPOGY'])))}
+        if data_key is 'est_gazes':
+            est_gaze = json.load(file)
+            # est_gaze_result = {key: dict_point_to_array(value, flip_vector=array([-1, -1, -1])) for key, value in est_gaze.items() if key in ['gazeLeft', 'gazeCommon', 'gazeRight']}
+            # est_gaze_result['gazeRight'] = dict_point_to_array(est_gaze['gazeRight'], flip_vector=array([-1, -1, -1]))
+            return est_gaze
         else:
             raise Exception('Wrong data_key.')
 
     def read_data(self, snapshot, verbose):
         data = {}
         for data_key, data_dir in self.data_dict.items():
-            if data_key == 'gazes':
+            if data_key == 'gazes' or data_key == 'est_gazes':
                 ext = '.txt'
                 mode = 'r'
             else:

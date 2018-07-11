@@ -121,18 +121,19 @@ def create_learning_dataset(save_path, parser, face_detector, scene, indices=Non
 
     learning_data = {'dataset': [], 'scene': scene.to_dict()}
     for (frames, data), index in parser.snapshots_iterate(indices=indices, progress_bar=True):
-        if True:
+        if data['face_points']:
             frame_basler = frames['basler']
-            actors_basler = face_detector.detect_actors(frame_basler, scene.origin)
-            if len(actors_basler) == 0:
-                continue
-            actor_basler = actors_basler[0]
+            actor_kinect = Actor('kinect', origin=scene.origin)
+            actor_kinect.set_kinect_landmarks3d(data['face_points'])
+            # if len(actors_basler) == 0:
+            #     continue
+            # actor_basler = actors_basler[0]
             # actor_basler.set_landmarks3d_gazes(data['gazes'], scene.screens['wall'])
             gazes = {'left': gaze,
                     'right': gaze}
-            actor_basler.set_landmarks3d_gazes(gazes, scene.screens['wall'])
+            actor_kinect.set_landmarks3d_gazes(gazes, scene.screens['wall'])
 
-            right_eye_frame, left_eye_frame = frame_basler.extract_eyes_from_actor(actor_basler,
+            right_eye_frame, left_eye_frame = frame_basler.extract_eyes_from_actor(actor_kinect,
                                                                                    resolution=(120, 72),
                                                                                    equalize_hist=True,
                                                                                    to_grayscale=True)
@@ -140,7 +141,7 @@ def create_learning_dataset(save_path, parser, face_detector, scene, indices=Non
             cv2.imwrite(Path.join(save_path, f'{index}_left.png'), left_eye_frame)
             cv2.imwrite(Path.join(save_path, f'{index}_right.png'), right_eye_frame)
 
-            learning_data['dataset'].append(actor_basler.to_learning_dataset(f'{index}_left.png',
+            learning_data['dataset'].append(actor_kinect.to_learning_dataset(f'{index}_left.png',
                                                                               f'{index}_right.png',
                                                                               scene.cams['basler']))
 

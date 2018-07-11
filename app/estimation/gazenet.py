@@ -24,7 +24,7 @@ def prepare(eye_image, head_pose):
     head_pose_tensor: Vector, ndarray[[float, float, float]]
     """
     result = [reshape(eye_image, (-1, 72, 120, 1)) / 255, gaze3Dto2D(reshape(head_pose, (-1, 3)))]
-    print(gaze3Dto2D(reshape(head_pose, (-1, 3))))
+    # print(gaze3Dto2D(reshape(head_pose, (-1, 3))))
     return result
 
 
@@ -51,7 +51,7 @@ class GazeNet:
     def init(self, path_to_model):
         self.model = load_model(path_to_model,
                                 custom_objects={'angle_accuracy': angle_accuracy},
-                                compile=False)
+                                compile=True)
         return self
 
     def train(self, path_to_save, create_new=False, create_dict=None, sess_name=None, save_period=100, **kwargs):
@@ -67,10 +67,9 @@ class GazeNet:
         callbacks = create_callbacks(path_to_save=path_to_save, save_period=save_period)
 
         try:
-            history = self.model.fit(callbacks=callbacks, **kwargs)
+            return self.model.fit(callbacks=callbacks, **kwargs)
         finally:
             self.model.save(os.path.join(path_to_save, 'model_last.h5'))
-        return history
 
     def score(self, input_data, gazes, batch_size):
         return self.model.evaluate(prepare(*input_data), gaze3Dto2D(gazes), batch_size=batch_size)

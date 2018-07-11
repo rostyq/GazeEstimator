@@ -1,18 +1,22 @@
-from app.device import SceneObj
 from numpy import cross
 from numpy import array
+from numpy import sum
+from numpy import abs
 from numpy.linalg import norm
 from numpy.linalg import inv
-from app.parser import quaternion_to_angle_axis, face_point_to_array
-from numpy import sum, abs, sqrt
+
+from app.device import SceneObj
+from app.parser import quaternion_to_angle_axis
+
 from scipy.optimize import minimize
+
 
 class Actor(SceneObj):
 
-
     def __init__(self, name, origin):
         super().__init__(name=name, origin=origin)
-        self.eyeball_radius = 0.012
+
+        # landmarks in real space
         self.landmarks3D = {
             'eyes': {
                 'left': {
@@ -29,7 +33,13 @@ class Actor(SceneObj):
             'nose': None,
             'chin': None
         }
+
+        # raw data from dlib
+        self.landmarks2D = None
+
+        # average parameters of face
         self.nose_chin_distance = None
+        self.eyeball_radius = 0.012
 
     def to_learning_dataset(self, img_left_name, img_rigth_name, camera):
         return {
@@ -64,14 +74,14 @@ class Actor(SceneObj):
         def objective_function(center, eye):
             return sum(abs(norm(center - face_points[eye, :], axis=1) - self.eyeball_radius))
 
-        self.landmarks3D['eyes']['left']['rectangle'] = array([face_points[i] for i in [1080, 201, 289, 151]])
-        self.landmarks3D['eyes']['right']['rectangle'] = array([face_points[i] for i in [1084, 847, 947, 772]])
+        self.landmarks3D['eyes']['left']['rectangle'] = face_points[[1080, 201, 289, 151]]
+        self.landmarks3D['eyes']['right']['rectangle'] = face_points[[1084, 847, 947, 772]]
         self.landmarks3D['eyes']['left']['center'] = minimize(lambda x: objective_function(x, left_eye_center),
                                                                x0=face_points[left_eye_center[0]]).x
         self.landmarks3D['eyes']['right']['center'] = minimize(lambda x: objective_function(x, right_eye_center),
                                                                x0=face_points[right_eye_center[0]]).x
-        self.landmarks3D['nose'] = array(face_points[18])
-        self.landmarks3D['chin'] = array(face_points[4])
+        self.landmarks3D['nose'] = face_points[18]
+        self.landmarks3D['chin'] = face_points[4]
         return self
 
     def set_dlib_landmarks3d(self, face_model_origin_space):
