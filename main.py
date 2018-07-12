@@ -1,20 +1,20 @@
-from config import *
-from os import path
 import os
-from app import Scene
-from app import create_learning_dataset
-from app.utils import experiment_without_BRS, visualize_predict
-from app import ExperimentParser
 import sys
+
+from config import *
 from app.estimation import PersonDetector
-import json
+from app import Scene
 
 
 face_detector = PersonDetector(**ACTOR_DETECTOR)
 
 scene = Scene(origin_name=ORIGIN_CAM, intrinsic_params=INTRINSIC_PARAMS, extrinsic_params=EXTRINSIC_PARAMS)
 
+
 def gather():
+
+    from app.utils import experiment_without_BRS
+
     if len(sys.argv) == 2:
         DATASET_PATH = sys.argv[1]
 
@@ -25,23 +25,38 @@ def gather():
                            size='_72_120',
                            dataset_size=500)
 
+
 def postprocess():
-    parser = ExperimentParser(session_code=path.split(DATASET_PATH)[-1])
+
+    from app import ExperimentParser
+    from app.utils import create_learning_dataset
+
+    parser = ExperimentParser(session_code=os.path.split(DATASET_PATH)[-1])
     parser.fit(DATASET_PATH, scene)
 
     create_learning_dataset('../brs/', parser, face_detector, scene, indices=range(len(parser.snapshots)))
 
+
 def visualize():
+
+    from cv2 import imread
+    from app.utils import visualize_predict
+
     back = imread('../screen1.png')
     visualize_predict(face_detector, scene, 'checkpoints/LRE_ff_gp+brs_batch_norm/model_1300_0.0021.h5', back=back)
 
+
 def train():
+
+    from app.estimation import DatasetParser
+    from app.estimation import GazeNet
+    import numpy as np
+    from sklearn.cluster import DBSCAN
+
     DATASET_PATH = '../normalized_data_72_120/'
     SESSIONS = sorted(os.listdir(DATASET_PATH))
     print(SESSIONS)
-    datasetparser = DatasetParser(images='dataset/{index}/eyes/{eye}/image',
-                                  poses='dataset/{index}/rotation_norm',
-                                  gazes='dataset/{index}/eyes/{eye}/gaze_norm')
+    datasetparser = DatasetParser(**DATASET_PARSER)
 
     val_split_ratio = 0.8
 
@@ -88,16 +103,18 @@ def train():
                          batch_size=64,
                          epochs=10000)
 
+
 def test():
+
+    from app.estimation import DatasetParser
+    from app.estimation import GazeNet
 
     DATASET_PATH = '../normalized_data/'
 
     SESSIONS = os.listdir(DATASET_PATH)
     print(SESSIONS)
 
-    datasetparser = DatasetParser(images='dataset/{index}/eyes/{eye}/image',
-                                  poses='dataset/{index}/rotation_norm',
-                                  gazes='dataset/{index}/eyes/{eye}/gaze_norm')
+    datasetparser = DatasetParser(**DATASET_PARSER)
 
     gaze_estimator = GazeNet().init('./checkpoints/custom_loss_mean_pose/model_3900_0.1439.h5')  # .init(PATH_TO_ESTIMATOR)
 
@@ -116,7 +133,11 @@ def test():
         print(f'\tRight Angle Error: {right_score[1]:.2f}')
         print(f'\tLeft Angle Error: {left_score[1]:.2f}\n')
 
+
 def main():
+
+    from app import ExperimentParser
+    from app.utils import create_learning_dataset
 
     if len(sys.argv) == 2:
         DATASET_PATH = sys.argv[1]
@@ -134,8 +155,8 @@ def main():
     ]
 
     for session, gaze in zip(sorted(os.listdir(DATASET_PATH)), gazes):
-        full_path = path.join(DATASET_PATH, session)
-        parser = ExperimentParser(session_code=path.split(full_path)[-1])
+        full_path = os.path.join(DATASET_PATH, session)
+        parser = ExperimentParser(session_code=os.path.split(full_path)[-1])
         parser.fit(full_path, scene)
         create_learning_dataset('../', parser, face_detector, scene, indices=range(len(parser.snapshots)), gaze=gaze)
 
@@ -149,7 +170,7 @@ run_dict = {
     'gather': gather
 }
 
-run = sys.argv[0]
+run = sys.argv[1]
 
 if __name__ == "__main__":
     run_dict[run]()

@@ -68,6 +68,12 @@ ACTOR_DETECTOR = {
     'chin_nose_distance': 0.065
 }
 
+DATASET_PARSER = {
+    'images': 'dataset/{index}/eyes/{eye}/image',
+    'poses': 'dataset/{index}/rotation_norm',
+    'gazes': 'dataset/{index}/eyes/{eye}/gaze_norm'
+}
+
 with open(PATH_TO_EXTRINSIC_PARAMS) as f:
     EXTRINSIC_PARAMS = load(f)
 

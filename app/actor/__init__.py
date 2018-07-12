@@ -63,7 +63,7 @@ class Person(SceneObj):
         return self.landmarks_3d['chin']
 
     def set_eye_rectangle(self, eye, rectangle):
-        self.landmarks_3d['eyes'][eye][rectangle] = rectangle
+        self.landmarks_3d['eyes'][eye]['rectangle'] = rectangle
 
     def set_eye_gaze(self, eye, gaze_vector):
         self.landmarks_3d['eyes'][eye]['gaze'] = gaze_vector

@@ -177,8 +177,8 @@ def connect_gazepoint():
 
 
 def connect_basler(exposure_time=1000):
-    print(pypylon.fpersony.find_devices())
-    basler = pypylon.fpersony.create_device(pypylon.fpersony.find_devices()[0])
+    print(pypylon.factory.find_devices())
+    basler = pypylon.factory.create_device(pypylon.factory.find_devices()[0])
     basler.open()
     #print(basler.properties['ExposureTimeAbs'])
     basler.properties['ExposureTime'] = 80000
