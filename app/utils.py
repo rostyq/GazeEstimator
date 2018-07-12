@@ -93,7 +93,7 @@ def create_wall_video(save_path, parser, face_detector, scene, indices=None):
             actor_basler.set_landmarks3d_gazes(data['gazes'], scene.screens['wall'])
 
             # Estimation
-            left_eye = frame_basler.extract_eyes_from_actor(actor_basler, equalize_hist=True, to_grayscale=True)[0]
+            left_eye = frame_basler.extract_eyes_from_person(actor_basler, equalize_hist=True, to_grayscale=True)[0]
             gaze_line_basler = actor_basler.get_gaze_line(actor_basler.landmarks3D['eyes']['left']['gaze'], key='left')
             face_line_basler = [actor_basler.landmarks3D['nose'] + 100 * actor_basler.get_norm_vector_to_face(),
                                 actor_basler.landmarks3D['nose']]
@@ -276,10 +276,10 @@ def experiment_without_BRS(save_path, face_detector, scene, session_code, datase
         actor_basler = actors_basler[0]
         actor_basler.set_landmarks3d_gazes(gaze, wall)
 
-        left_eye_frame, right_eye_frame = frame_basler.extract_eyes_from_actor(actor_basler,
-                                                                               resolution=(120, 72),
-                                                                               equalize_hist=True,
-                                                                               to_grayscale=False)
+        left_eye_frame, right_eye_frame = frame_basler.extract_eyes_from_person(actor_basler,
+                                                                                resolution=(120, 72),
+                                                                                equalize_hist=True,
+                                                                                to_grayscale=False)
         # gaze_line_basler = actor_basler.get_gaze_line(actor_basler.landmarks_3d['eyes']['left']['gaze'], key='left')
         # gaze_intersection = wall.get_intersection_point_in_pixels(gaze_line_basler)
 
@@ -317,34 +317,34 @@ def visualize_predict(face_detector, scene, path_to_model, back=None):
 
                 # gaze = tuple(map(float, (sample[-1]['FPOGX'], sample[-1]['FPOGY'])))
                 frame_basler = Frame(scene.cams['basler'], cv2.flip(frame_basler, 1)) #cv2.blur(cv2.flip(frame_basler, 1), (3, 3)))
-                actors_basler = face_detector.detect_persons(frame_basler, scene.origin)
-                if len(actors_basler) == 0:
-                    print('No actors found!')
+                persons_basler = face_detector.detect_persons(frame_basler, scene.origin)
+                if len(persons_basler) == 0:
+                    print('No persons found!')
                     continue
 
                 image = None
 
-                for i, actor_basler in enumerate(actors_basler):
+                for i, person_basler in enumerate(persons_basler):
 
-                    left_eye_frame, right_eye_frame = frame_basler.extract_eyes_from_actor(actor_basler,
-                                                                                           resolution=(120, 72),
-                                                                                           equalize_hist=True,
-                                                                                           to_grayscale=False)
-                    # gaze_line_basler = actor_basler.get_gaze_line(actor_basler.landmarks_3d['eyes']['left']['gaze'])
+                    left_eye_frame, right_eye_frame = frame_basler.extract_eyes_from_person(person_basler,
+                                                                                            resolution=(120, 72),
+                                                                                            equalize_hist=True,
+                                                                                            to_grayscale=False)
+                    # gaze_line_basler = person_basler.get_gaze_line(person_basler.landmarks_3d['eyes']['left']['gaze'])
                     # gaze_intersection = wall.get_intersection_point_in_pixels(gaze_line_basler)
-                    norm_to_face = np.linalg.inv(frame_basler.camera.get_rotation_matrix()) @ (actor_basler.get_norm_vector_to_face() / norm(actor_basler.get_norm_vector_to_face())).reshape(3, -1)
-                    gaze_line_left_estimated_basler = actor_basler.get_gaze_line(
+                    norm_to_face = np.linalg.inv(frame_basler.camera.get_rotation_matrix()) @ (person_basler.get_norm_vector_to_face() / norm(person_basler.get_norm_vector_to_face())).reshape(3, -1)
+                    gaze_line_left_estimated_basler = person_basler.get_gaze_line(
                         frame_basler.camera.get_rotation_matrix() @ model.estimate_gaze(left_eye_frame, norm_to_face).reshape(3, -1),
                         key='left'
                     )
-                    gaze_line_right_estimated_basler = actor_basler.get_gaze_line(
+                    gaze_line_right_estimated_basler = person_basler.get_gaze_line(
                         frame_basler.camera.get_rotation_matrix() @
                         (model.estimate_gaze(cv2.flip(right_eye_frame, 1), norm_to_face * np.array([[-1], [1], [1]])) * np.array([-1, 1, 1])).reshape(3, -1),
                         key='right'
                     )
 
-                    face_line_basler = [actor_basler.landmarks3D['nose'] + 50 * actor_basler.get_norm_vector_to_face(),
-                                        actor_basler.landmarks3D['nose']]
+                    face_line_basler = [person_basler.landmarks_3d['nose'] + 50 * person_basler.get_norm_vector_to_face(),
+                                        person_basler.landmarks_3d['nose']]
                     gaze_left_estimated_intersection = wall.get_intersection_point_in_pixels(gaze_line_left_estimated_basler)
                     gaze_right_estimated_intersection = wall.get_intersection_point_in_pixels(gaze_line_right_estimated_basler)
                     gaze_estimated_intersection = np.array([gaze_left_estimated_intersection, gaze_right_estimated_intersection]).mean(axis=0)

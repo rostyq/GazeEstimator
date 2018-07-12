@@ -6,12 +6,12 @@ from app import create_learning_dataset
 from app.utils import experiment_without_BRS, visualize_predict
 from app import ExperimentParser
 import sys
-from app.estimation import ActorDetector
+from app.estimation import PersonDetector
 import json
 
 if __name__ == "__main__":
 
-    face_detector = ActorDetector(**ACTOR_DETECTOR)
+    face_detector = PersonDetector(**ACTOR_DETECTOR)
     if len(sys.argv) == 2:
         DATASET_PATH = sys.argv[1]
 

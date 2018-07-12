@@ -64,7 +64,7 @@ class Frame:
         """
         return self.image[coord[0]:coord[0]+shape[0], coord[1]:coord[1]+shape[1]]
 
-    def extract_eyes_from_actor(self, actor, resolution=(60, 36), equalize_hist=False, to_grayscale=False):
+    def extract_eyes_from_person(self, person, resolution=(60, 36), equalize_hist=False, to_grayscale=False):
         # eye planes
         left_norm_image_plane = array([[resolution[0], 0.0          ],
                                         [0.0,           0.0          ],
@@ -74,8 +74,9 @@ class Frame:
                                          [resolution[0], 0.0         ],
                                          [resolution[0], resolution[1]],
                                          [0.,            resolution[1]]])
-        left_eye_projection = self.get_projected_coordinates(actor.landmarks3D['eyes']['left']['rectangle'])
-        right_eye_projection = self.get_projected_coordinates(actor.landmarks3D['eyes']['right']['rectangle'])
+        print(person.landmarks_3d['eyes']['left']['rectangle'])
+        left_eye_projection = self.get_projected_coordinates(person.landmarks_3d['eyes']['left']['rectangle'])
+        right_eye_projection = self.get_projected_coordinates(person.landmarks_3d['eyes']['right']['rectangle'])
 
         homography, status = findHomography(left_eye_projection, left_norm_image_plane)
         left_eye_frame = warpPerspective(self.image, homography, resolution)

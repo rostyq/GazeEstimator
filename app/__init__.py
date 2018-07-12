@@ -5,7 +5,7 @@ import os.path
 from app.device.screen import Screen
 from app.device.camera import Camera
 from app.parser import ExperimentParser
-from app.estimation.actordetector import ActorDetector
+from app.estimation.persondetector import PersonDetector
 from app.frame import Frame
 from app.actor import Person
 from app import *
@@ -62,10 +62,10 @@ def create_learning_dataset(save_path, parser, face_detector, scene, indices=Non
                     'right': gaze}
             actor_kinect.set_landmarks3d_gazes(gazes, scene.screens['wall'])
 
-            right_eye_frame, left_eye_frame = frame_basler.extract_eyes_from_actor(actor_kinect,
-                                                                                   resolution=(120, 72),
-                                                                                   equalize_hist=True,
-                                                                                   to_grayscale=True)
+            right_eye_frame, left_eye_frame = frame_basler.extract_eyes_from_person(actor_kinect,
+                                                                                    resolution=(120, 72),
+                                                                                    equalize_hist=True,
+                                                                                    to_grayscale=True)
 
             cv2.imwrite(Path.join(save_path, f'{index}_left.png'), left_eye_frame)
             cv2.imwrite(Path.join(save_path, f'{index}_right.png'), right_eye_frame)

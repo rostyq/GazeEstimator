@@ -19,7 +19,7 @@ if __name__ == '__main__':
     train_arrays = [], [], [], []
     val_arrays = [], [], [], []
     # debug_idx = SESSIONS.index('Rostyslav_Bohomaz_right_screen')
-    for SESS in SESSIONS:
+    for SESS in SESSIONS[:1]:
         IMAGES_PATH = os.path.join(DATASET_PATH, SESS)
         print(SESS)
         with open(os.path.join(IMAGES_PATH, 'normalized_dataset.json'), 'r') as session_data:

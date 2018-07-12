@@ -19,7 +19,7 @@ from numpy import tile
 from numpy import concatenate
 
 
-class ActorDetector:
+class PersonDetector:
 
     # 30 -- nose tip
     # 8 -- chin
@@ -49,7 +49,7 @@ class ActorDetector:
         face_scale = chin_nose_distance / self.model_points[1, 1]
         self.eye_height = 60 * face_scale
         self.eye_width = 160 * face_scale
-        self.model_points = self.model_points * scale
+        self.model_points = self.model_points * face_scale
         self.nose_chin_distance = chin_nose_distance
 
     def rescale_coordinates(self, coords):
@@ -154,7 +154,7 @@ class ActorDetector:
         # find faces on image
         raw_dlib_faces, extracted_faces_2d = self.extract_faces(frame.image)
 
-        persons = [self.detect_person(name=f'Person_{i}',
+        persons = [self.detect_person(name=f'Person{i}',
                                       extracted_face=face,
                                       camera=frame.camera,
                                       origin=origin,
