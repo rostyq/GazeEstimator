@@ -38,29 +38,29 @@ def create_gaze_video(save_path, parser, face_detector, scene, cam_name, indices
         if data['face_points']:
             frame_basler = frames['basler']
             frame_kinect = frames['color']
-            actors_basler = face_detector.detect_persons(frame_basler, scene.origin)
-            actor_kinect = Person('kinect', origin=scene.origin)
-            actor_kinect.set_kinect_landmarks3d(data['face_points'])
-            if len(actors_basler) == 0:
+            persons_basler = face_detector.detect_persons(frame_basler, scene.origin)
+            person_kinect = Person('kinect', origin=scene.origin)
+            person_kinect.set_kinect_landmarks3d(data['face_points'])
+            if len(persons_basler) == 0:
                 return None
-            actor_basler = actors_basler[0]
-            # actor_basler.set_landmarks3d_gazes(data['gazes'], scene.screens['wall'])
+            person_basler = persons_basler[0]
+            # person_basler.set_landmarks3d_gazes(data['gazes'], scene.screens['wall'])
 
             # Estimation
-            # left_gaze_line_basler = actor_basler.get_gaze_line(actor_basler.landmarks_3d['eyes']['left']['gaze'], key='left')
-            # right_gaze_line_basler = actor_basler.get_gaze_line(actor_basler.landmarks_3d['eyes']['right']['gaze'], key='right')
-            face_line_basler = [actor_basler.landmarks3D['nose'] + 100 * actor_basler.get_norm_vector_to_face(),
-                                actor_basler.landmarks3D['nose']]
-            face_line_color = [actor_kinect.landmarks_3d['nose'] + 100 * actor_kinect.get_norm_vector_to_face(),
-                               actor_kinect.landmarks_3d['nose']]
+            # left_gaze_line_basler = person_basler.get_gaze_line(person_basler.get_eye_gaze('left'), key='left')
+            # right_gaze_line_basler = person_basler.get_gaze_line(person_basler.landmarks_3d['eyes']['right']['gaze'], key='right')
+            face_line_basler = [person_basler.get_nose() + 100 * person_basler.get_face_gaze(),
+                                person_basler.get_nose()]
+            face_line_color = [person_kinect.get_nose() + 100 * person_kinect.get_face_gaze(),
+                               person_kinect.get_nose()]
 
             # left_gaze_intersection = scene.screens['wall'].get_intersection_point_origin(left_gaze_line_basler)
             # right_gaze_intersection = scene.screens['wall'].get_intersection_point_origin(right_gaze_line_basler)
             face_basler_intersection = scene.screens['wall'].get_intersection_point_origin(face_line_basler)
             face_color_intersection = scene.screens['wall'].get_intersection_point_origin(face_line_color)
 
-            left_gaze_line_est = actor_kinect.get_gaze_line(data['est_gazes']['gazeLeft'], key='left')
-            right_gaze_line_est = actor_kinect.get_gaze_line(data['est_gazes']['gazeRight'], key='right')
+            left_gaze_line_est = person_kinect.get_gaze_line(data['est_gazes']['gazeLeft'], key='left')
+            right_gaze_line_est = person_kinect.get_gaze_line(data['est_gazes']['gazeRight'], key='right')
             left_est_intersection = wall.get_intersection_point_origin(left_gaze_line_est)
             right_est_intersection = wall.get_intersection_point_origin(right_gaze_line_est)
             # gaze_estimated_intersection = scene.screens['wall'].get_intersection_point_origin(gaze_line_estimated_basler)
@@ -86,20 +86,20 @@ def create_wall_video(save_path, parser, face_detector, scene, indices=None):
     def get_wall_image(frames, data):
         if data['gazes']:
             frame_basler = frames['basler']
-            actors_basler = face_detector.detect_persons(frame_basler, scene.origin)
-            if len(actors_basler) == 0:
+            persons_basler = face_detector.detect_persons(frame_basler, scene.origin)
+            if len(persons_basler) == 0:
                 return None
-            actor_basler = actors_basler[0]
-            actor_basler.set_landmarks3d_gazes(data['gazes'], scene.screens['wall'])
+            person_basler = persons_basler[0]
+            person_basler.set_landmarks3d_gazes(data['gazes'], scene.screens['wall'])
 
             # Estimation
-            left_eye = frame_basler.extract_eyes_from_person(actor_basler, equalize_hist=True, to_grayscale=True)[0]
-            gaze_line_basler = actor_basler.get_gaze_line(actor_basler.landmarks3D['eyes']['left']['gaze'], key='left')
-            face_line_basler = [actor_basler.landmarks3D['nose'] + 100 * actor_basler.get_norm_vector_to_face(),
-                                actor_basler.landmarks3D['nose']]
-            # gaze_line_estimated_basler = actor_basler.get_gaze_line(
+            left_eye = frame_basler.extract_eyes_from_person(person_basler, equalize_hist=True, to_grayscale=True)[0]
+            gaze_line_basler = person_basler.get_gaze_line(person_basler.get_eye_gaze('left'), key='left')
+            face_line_basler = [person_basler.get_nose() + 100 * person_basler.get_face_gaze(),
+                                person_basler.get_nose()]
+            # gaze_line_estimated_basler = person_basler.get_gaze_line(
             #     frame_basler.camera.vectors_to_origin(
-            #         model.estimate_gaze(left_eye, actor_basler.get_norm_vector_to_face())
+            #         model.estimate_gaze(left_eye, person_basler.get_face_gaze())
             #     )
             # )
 
@@ -118,16 +118,18 @@ def create_wall_video(save_path, parser, face_detector, scene, indices=None):
     create_video(save_path, f'wall_{parser.session_code}.avi', resolution, 5.0, parser, get_wall_image, indices)
 
 
-def validate_calibration(parser, scene, index, face_detector, cam_names = ['basler', 'color', 'web_cam']):
+def validate_calibration(parser, scene, index, face_detector, cam_names=['basler', 'color', 'web_cam']):
 
-    def show_face_landmarks3d(frame, actor, title):
+    def show_face_landmarks3d(frame, person, title):
         img_copy = np.copy(frame.image)
-        frame.project_vectors(actor.landmarks3D['chin'])
-        frame.project_vectors(actor.landmarks3D['nose'])
-        frame.project_vectors(actor.landmarks3D['eyes']['left']['center'])
-        frame.project_vectors(actor.landmarks3D['eyes']['right']['center'])
-        frame.project_vectors(actor.landmarks3D['eyes']['right']['rectangle'])
-        frame.project_vectors(actor.landmarks3D['eyes']['left']['rectangle'])
+
+        frame.project_vectors(person.get_chin())
+        frame.project_vectors(person.get_nose())
+        frame.project_vectors(person.get_eye_center('left'))
+        frame.project_vectors(person.get_eye_center('right'))
+        frame.project_vectors(person.get_eye_rectangle('right'))
+        frame.project_vectors(person.get_eye_rectangle('left'))
+
         cv2.namedWindow(title, cv2.WINDOW_NORMAL)
         cv2.imshow(title, frame.image)
         cv2.resizeWindow(title, 600, 360)
@@ -138,30 +140,30 @@ def validate_calibration(parser, scene, index, face_detector, cam_names = ['basl
 
         # Kinect landmarks
         if data['face_points'] is not None:
-            actor_kinect = Person('kinect', origin=scene.origin)
-            actor_kinect.set_kinect_landmarks3d(data['face_points'])
-            print(f'Kinect landmarks: {actor_kinect.landmarks_3d}')
+            person_kinect = Person('kinect', origin=scene.origin)
+            person_kinect.set_kinect_landmarks3d(data['face_points'])
+            print(f'Kinect landmarks: {person_kinect.landmarks_3d}')
             for i, frame in enumerate(frames_to_show):
-                show_face_landmarks3d(frame, actor_kinect, f'frame_{i}_actor_kinect')
+                show_face_landmarks3d(frame, person_kinect, f'frame_{i}_person_kinect')
         cv2.waitKey()
 
         # Basler lanmarks
-        actors_basler = face_detector.detect_persons(frames['basler'], scene.origin)
-        if len(actors_basler):
-            actor_basler = actors_basler[0]
-            print(f'Basler landmarks: {actor_basler.landmarks_3d}')
+        persons_basler = face_detector.detect_persons(frames['basler'], scene.origin)
+        if len(persons_basler):
+            person_basler = persons_basler[0]
+            print(f'Basler landmarks: {person_basler.landmarks_3d}')
             for i, frame in enumerate(frames_to_show):
-                show_face_landmarks3d(frame, actor_kinect, f'frame_{i}_actor_basler')
+                show_face_landmarks3d(frame, person_kinect, f'frame_{i}_person_basler')
         cv2.waitKey()
 
         # Color landmarks
-        face_detector.factor = 1
-        actors_color = face_detector.detect_persons(frames['color'], scene.origin)
-        if len(actors_color):
-            actor_color= actors_color[0]
-            print(f'Color landmarks: {actor_color.landmarks_3d}')
+        face_detector.fperson = 1
+        persons_color = face_detector.detect_persons(frames['color'], scene.origin)
+        if len(persons_color):
+            person_color= persons_color[0]
+            print(f'Color landmarks: {person_color.landmarks_3d}')
             for i, frame in enumerate(frames_to_show):
-                show_face_landmarks3d(frame, actor_kinect, f'frame_{i}_actor_color')
+                show_face_landmarks3d(frame, person_kinect, f'frame_{i}_person_color')
         cv2.waitKey()
 
     cv2.destroyAllWindows()
@@ -175,8 +177,8 @@ def connect_gazepoint():
 
 
 def connect_basler(exposure_time=1000):
-    print(pypylon.factory.find_devices())
-    basler = pypylon.factory.create_device(pypylon.factory.find_devices()[0])
+    print(pypylon.fpersony.find_devices())
+    basler = pypylon.fpersony.create_device(pypylon.fpersony.find_devices()[0])
     basler.open()
     #print(basler.properties['ExposureTimeAbs'])
     basler.properties['ExposureTime'] = 80000
@@ -194,6 +196,7 @@ def show_point(point, scene):
 
 def ispressed(button, delay=1):
     return cv2.waitKey(delay) == button
+
 
 def init_experiment(save_path, session_code, size, scene, testing=False, path_to_model=None, screen='wall'):
     if not testing:
@@ -269,18 +272,18 @@ def experiment_without_BRS(save_path, face_detector, scene, session_code, datase
 
     # Processing
     for index, (gaze, frame_basler) in tqdm(enumerate(zip(gazes, frames_basler))):
-        actors_basler = face_detector.detect_persons(frame_basler, scene.origin)
-        if len(actors_basler) == 0:
-            print('No actors found!')
+        persons_basler = face_detector.detect_persons(frame_basler, scene.origin)
+        if len(persons_basler) == 0:
+            print('No persons found!')
             continue
-        actor_basler = actors_basler[0]
-        actor_basler.set_landmarks3d_gazes(gaze, wall)
+        person_basler = persons_basler[0]
+        person_basler.set_landmarks3d_gazes(gaze, wall)
 
-        left_eye_frame, right_eye_frame = frame_basler.extract_eyes_from_person(actor_basler,
+        left_eye_frame, right_eye_frame = frame_basler.extract_eyes_from_person(person_basler,
                                                                                 resolution=(120, 72),
                                                                                 equalize_hist=True,
                                                                                 to_grayscale=False)
-        # gaze_line_basler = actor_basler.get_gaze_line(actor_basler.landmarks_3d['eyes']['left']['gaze'], key='left')
+        # gaze_line_basler = person_basler.get_gaze_line(person_basler.get_eye_gaze('left'), key='left')
         # gaze_intersection = wall.get_intersection_point_in_pixels(gaze_line_basler)
 
         # image = wall.generate_image_with_circles(np.array([gaze_intersection]),
@@ -295,7 +298,7 @@ def experiment_without_BRS(save_path, face_detector, scene, session_code, datase
         cv2.imwrite(Path.join(save_path, f'{index}_right.png'), right_eye_frame)
 
         learning_data['dataset'].append(
-            actor_basler.to_learning_dataset(f'{index}_left.png', f'{index}_right.png', scene.cams['basler'])
+            person_basler.to_learning_dataset(f'{index}_left.png', f'{index}_right.png', scene.cams['basler'])
         )
 
     # cv2.destroyAllWindows()
@@ -330,9 +333,9 @@ def visualize_predict(face_detector, scene, path_to_model, back=None):
                                                                                             resolution=(120, 72),
                                                                                             equalize_hist=True,
                                                                                             to_grayscale=False)
-                    # gaze_line_basler = person_basler.get_gaze_line(person_basler.landmarks_3d['eyes']['left']['gaze'])
+                    # gaze_line_basler = person_basler.get_gaze_line(person_basler.get_eye_gaze('left'))
                     # gaze_intersection = wall.get_intersection_point_in_pixels(gaze_line_basler)
-                    norm_to_face = np.linalg.inv(frame_basler.camera.get_rotation_matrix()) @ (person_basler.get_norm_vector_to_face() / norm(person_basler.get_norm_vector_to_face())).reshape(3, -1)
+                    norm_to_face = np.linalg.inv(frame_basler.camera.get_rotation_matrix()) @ (person_basler.get_face_gaze() / norm(person_basler.get_face_gaze())).reshape(3, -1)
                     gaze_line_left_estimated_basler = person_basler.get_gaze_line(
                         frame_basler.camera.get_rotation_matrix() @ model.estimate_gaze(left_eye_frame, norm_to_face).reshape(3, -1),
                         key='left'
@@ -343,8 +346,8 @@ def visualize_predict(face_detector, scene, path_to_model, back=None):
                         key='right'
                     )
 
-                    face_line_basler = [person_basler.landmarks_3d['nose'] + 50 * person_basler.get_norm_vector_to_face(),
-                                        person_basler.landmarks_3d['nose']]
+                    face_line_basler = [person_basler.get_nose() + 50 * person_basler.get_face_gaze(),
+                                        person_basler.get_nose()]
                     gaze_left_estimated_intersection = wall.get_intersection_point_in_pixels(gaze_line_left_estimated_basler)
                     gaze_right_estimated_intersection = wall.get_intersection_point_in_pixels(gaze_line_right_estimated_basler)
                     gaze_estimated_intersection = np.array([gaze_left_estimated_intersection, gaze_right_estimated_intersection]).mean(axis=0)

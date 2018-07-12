@@ -1,15 +1,19 @@
-from numpy import copy
 from numpy import array
-from cv2 import projectPoints
+from numpy.linalg import inv
+
 from cv2 import circle
+from cv2 import line
+from cv2 import putText
+
+from cv2 import cvtColor
+from cv2 import equalizeHist
+
+from cv2 import projectPoints
 from cv2 import findHomography
 from cv2 import warpPerspective
-from cv2 import cvtColor, COLOR_RGB2GRAY
-from cv2 import equalizeHist
-from cv2 import putText, FONT_HERSHEY_SIMPLEX
-from cv2 import Rodrigues
-from numpy.linalg import inv
-from cv2 import line
+
+from cv2 import COLOR_RGB2GRAY
+from cv2 import FONT_HERSHEY_SIMPLEX
 
 
 class Frame:
@@ -74,9 +78,9 @@ class Frame:
                                          [resolution[0], 0.0         ],
                                          [resolution[0], resolution[1]],
                                          [0.,            resolution[1]]])
-        print(person.landmarks_3d['eyes']['left']['rectangle'])
-        left_eye_projection = self.get_projected_coordinates(person.landmarks_3d['eyes']['left']['rectangle'])
-        right_eye_projection = self.get_projected_coordinates(person.landmarks_3d['eyes']['right']['rectangle'])
+
+        left_eye_projection = self.get_projected_coordinates(person.get_eye_rectangle('left'))
+        right_eye_projection = self.get_projected_coordinates(person.get_eye_rectangle('right'))
 
         homography, status = findHomography(left_eye_projection, left_norm_image_plane)
         left_eye_frame = warpPerspective(self.image, homography, resolution)

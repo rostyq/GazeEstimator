@@ -8,8 +8,11 @@ from numpy.linalg import solve
 from cv2 import copyMakeBorder, BORDER_CONSTANT
 from app.frame import Frame
 
+
 def plane_line_intersection(line_points, plane_points):
-    ''' Compute intersection point of plane and lineself.
+
+    """
+    Compute intersection point of plane and lineself.
     Parameter line_points consists of two points and stands to determine
     line's equesion:
         (x - x_1)/(x_2 - x_1) =
@@ -19,7 +22,7 @@ def plane_line_intersection(line_points, plane_points):
     plane's equasion:
         A*x + B*y + C*z = D.
     This function returns 3D coordinates of intersection point.
-    '''
+    """
 
     line_point_1 = array(line_points[0]).reshape(3)
     line_point_2 = array(line_points[1]).reshape(3)
