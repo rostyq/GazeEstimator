@@ -47,10 +47,21 @@ INTRINSIC_PARAMS = {
     }
 }
 
+GAZEPOINT_MARKERS = [
+    (0.1, 0.1),
+    (0.5, 0.1),
+    (0.9, 0.1),
+    (0.9, 0.5),
+    (0.5, 0.5),
+    (0.1, 0.5),
+    (0.1, 0.9),
+    (0.5, 0.9),
+    (0.9, 0.9)
+]
 
 ORIGIN_CAM = 'ir'
 
-DATASET_PATH = r'C:\Users\Valik\Documents\GitHub\dataroot\RETNNA\BAS\1527250535'
+DATASET_PATH = r''
 
 PATH_TO_ESTIMATOR = './app/bin/estimator.h5'  # './checkpoints/model_200_0.0028.h5'  # './app/bin/estimator.h5'
 PATH_TO_FACE_POINTS = './app/bin/face_landmarks.dat'

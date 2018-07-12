@@ -142,19 +142,7 @@ def main():
     if len(sys.argv) == 2:
         DATASET_PATH = sys.argv[1]
 
-    gazes = [
-        (192/1920, 108/1080),
-        (960/1920, 108/1080),
-        (1728/1920, 108/1080),
-        (1729/1920, 540/1080),
-        (960/1920, 540/1080),
-        (192/1920, 540/1080),
-        (192/1920, 971/1080),
-        (960/1920, 971/1080),
-        (1729/1920, 971/1080)
-    ]
-
-    for session, gaze in zip(sorted(os.listdir(DATASET_PATH)), gazes):
+    for session, gaze in zip(sorted(os.listdir(DATASET_PATH)), GAZEPOINT_MARKERS):
         full_path = os.path.join(DATASET_PATH, session)
         parser = ExperimentParser(session_code=os.path.split(full_path)[-1])
         parser.fit(full_path, scene)
