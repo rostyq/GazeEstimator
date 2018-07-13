@@ -63,13 +63,15 @@ ORIGIN_CAM = 'ir'
 
 DATASET_PATH = r''
 
+MARKERS_PATH = './markers.json'
+
 PATH_TO_ESTIMATOR = './app/bin/estimator.h5'  # './checkpoints/model_200_0.0028.h5'  # './app/bin/estimator.h5'
 PATH_TO_FACE_POINTS = './app/bin/face_landmarks.dat'
 PATH_TO_FACE_MODEL = './app/bin/face_points_tutorial.mat'
 PATH_TO_HAARCASCADE_MODEL = './app/bin/haarcascade_frontalface_default.xml'
 PATH_TO_EXTRINSIC_PARAMS = './extrinsic_params.json'
 
-ACTOR_DETECTOR = {
+PERSON_DETECTOR = {
     'path_to_face_model': PATH_TO_FACE_MODEL,
     'path_to_face_points': PATH_TO_FACE_POINTS,
     'path_to_hc_model': PATH_TO_HAARCASCADE_MODEL,
@@ -88,3 +90,5 @@ DATASET_PARSER = {
 with open(PATH_TO_EXTRINSIC_PARAMS) as f:
     EXTRINSIC_PARAMS = load(f)
 
+with open(MARKERS_PATH) as f:
+    MARKERS = load(f)

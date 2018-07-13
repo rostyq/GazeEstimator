@@ -6,12 +6,12 @@ from app.estimation import PersonDetector
 from app import Scene
 
 
-face_detector = PersonDetector(**ACTOR_DETECTOR)
+face_detector = PersonDetector(**PERSON_DETECTOR)
 
 scene = Scene(origin_name=ORIGIN_CAM, intrinsic_params=INTRINSIC_PARAMS, extrinsic_params=EXTRINSIC_PARAMS)
 
 
-def gather():
+def gather(*args, **kwargs):
 
     from app.utils import experiment_without_BRS
 
@@ -26,7 +26,7 @@ def gather():
                            dataset_size=500)
 
 
-def postprocess():
+def postprocess(*args, **kwargs):
 
     from app import ExperimentParser
     from app.utils import create_learning_dataset
@@ -37,7 +37,7 @@ def postprocess():
     create_learning_dataset('../brs/', parser, face_detector, scene, indices=range(len(parser.snapshots)))
 
 
-def visualize():
+def visualize(*args, **kwargs):
 
     from cv2 import imread
     from app.utils import visualize_predict
@@ -46,7 +46,7 @@ def visualize():
     visualize_predict(face_detector, scene, 'checkpoints/LRE_ff_gp+brs_batch_norm/model_1300_0.0021.h5', back=back)
 
 
-def train():
+def train(*args, **kwargs):
 
     from app.estimation import DatasetParser
     from app.estimation import GazeNet
@@ -104,7 +104,7 @@ def train():
                          epochs=10000)
 
 
-def test():
+def test(*args, **kwargs):
 
     from app.estimation import DatasetParser
     from app.estimation import GazeNet
@@ -134,23 +134,31 @@ def test():
         print(f'\tLeft Angle Error: {left_score[1]:.2f}\n')
 
 
-def main():
+def main(*args):
 
-    from app import ExperimentParser
-    from app.utils import create_learning_dataset
+    if args[1] == 'meta':
 
-    if len(sys.argv) == 2:
-        DATASET_PATH = sys.argv[1]
+        from app.meta import write_meta_data
 
-    for session, gaze in zip(sorted(os.listdir(DATASET_PATH)), GAZEPOINT_MARKERS):
-        full_path = os.path.join(DATASET_PATH, session)
-        parser = ExperimentParser(session_code=os.path.split(full_path)[-1])
-        parser.fit(full_path, scene)
-        create_learning_dataset('../', parser, face_detector, scene, indices=range(len(parser.snapshots)), gaze=gaze)
+        DATASET_PATH = args[2]
+        output_path = args[3]
 
+        markers = []
+        for i in range(3):
+            for j in range(8):
+                marker = MARKERS.get(f'wall_{i}_dot_{j+1}')
+                if marker:
+                    markers.extend([marker] * 100)
+
+        for session in sorted(os.listdir(DATASET_PATH)):
+            session_path = os.path.join(DATASET_PATH, session)
+            write_meta_data(session_path, output_path, face_detector, scene, markers)
+
+    else:
+        raise Exception('Wrong command.')
 
 run_dict = {
-    'main': main,
+    'meta': main,
     'visualize': visualize,
     'postprocess': postprocess,
     'train': train,
@@ -158,7 +166,5 @@ run_dict = {
     'gather': gather
 }
 
-run = sys.argv[1]
-
 if __name__ == "__main__":
-    run_dict[run]()
+    main(*sys.argv)
