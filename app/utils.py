@@ -332,7 +332,8 @@ def visualize_predict(face_detector, scene, path_to_model, back=None):
                     left_eye_frame, right_eye_frame = frame_basler.extract_eyes_from_person(person_basler,
                                                                                             resolution=(120, 72),
                                                                                             equalize_hist=True,
-                                                                                            to_grayscale=False)
+                                                                                            to_grayscale=False,
+                                                                                            remove_specularity=False)
                     # gaze_line_basler = person_basler.get_gaze_line(person_basler.get_eye_gaze('left'))
                     # gaze_intersection = wall.get_intersection_point_in_pixels(gaze_line_basler)
                     norm_to_face = np.linalg.inv(frame_basler.camera.get_rotation_matrix()) @ (person_basler.get_face_gaze() / norm(person_basler.get_face_gaze())).reshape(3, -1)
@@ -352,9 +353,10 @@ def visualize_predict(face_detector, scene, path_to_model, back=None):
                     gaze_right_estimated_intersection = wall.get_intersection_point_in_pixels(gaze_line_right_estimated_basler)
                     gaze_estimated_intersection = np.array([gaze_left_estimated_intersection, gaze_right_estimated_intersection]).mean(axis=0)
                     face_intersection = wall.get_intersection_point_in_pixels(face_line_basler)
-                    image = wall.generate_image_with_circles(np.array([face_intersection, gaze_estimated_intersection,#]),
-                                                                       gaze_left_estimated_intersection,
-                                                                       gaze_right_estimated_intersection]),
+                    image = wall.generate_image_with_circles(np.array([face_intersection,
+                                                                       # gaze_estimated_intersection,]),#]),
+                                                                       gaze_left_estimated_intersection,]),
+                                                                       # gaze_right_estimated_intersection]),
                                                              padding=0,
                                                              labels=[f'FN{i}', f'GA{i}',
                                                                      f'GL{i}', f'GR{i}'],

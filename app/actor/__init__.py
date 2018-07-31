@@ -45,7 +45,7 @@ class Person(SceneObj):
 
         # average parameters of face
         self.nose_chin_distance = None
-        self.eyeball_radius = 0.012
+        self.eyeball_radius = 0.0135
 
     def get_eye_rectangle(self, eye):
         return self.landmarks_3d['eyes'][eye]['rectangle']

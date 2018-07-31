@@ -15,6 +15,8 @@ from cv2 import warpPerspective
 from cv2 import COLOR_RGB2GRAY
 from cv2 import FONT_HERSHEY_SIMPLEX
 
+from app.specularity_removal import remove_specularity as rm_specularity
+
 
 class Frame:
 
@@ -68,7 +70,7 @@ class Frame:
         """
         return self.image[coord[0]:coord[0]+shape[0], coord[1]:coord[1]+shape[1]]
 
-    def extract_eyes_from_person(self, person, resolution=(60, 36), equalize_hist=False, to_grayscale=False):
+    def extract_eyes_from_person(self, person, resolution=(60, 36), equalize_hist=False, to_grayscale=False, remove_specularity=False):
         # eye planes
         left_norm_image_plane = array([[resolution[0], 0.0          ],
                                         [0.0,           0.0          ],
@@ -93,5 +95,8 @@ class Frame:
                                               cvtColor(right_eye_frame, COLOR_RGB2GRAY)
         if equalize_hist:
             left_eye_frame, right_eye_frame = equalizeHist(left_eye_frame), equalizeHist(right_eye_frame)
+
+        if remove_specularity:
+            left_eye_frame, right_eye_frame = rm_specularity(left_eye_frame), rm_specularity(right_eye_frame)
 
         return left_eye_frame, right_eye_frame
