@@ -65,7 +65,7 @@ def custom_loss(y_true_and_weights, y_pred):
    return K.dot(2 * pi / y_weights, loss)/K.cast(K.shape(y_true)[0], 'float32')
 
 
-def create_model(learning_rate=1e-1, seed=None):
+def create_model(learning_rate=0.01, seed=None):
 
     # input
     input_img = Input(shape=(72, 120, 1), name='InputImage')
@@ -76,13 +76,13 @@ def create_model(learning_rate=1e-1, seed=None):
     # convolutional
     conv1 = Conv2D(
         filters=32,
-        activation='relu',
+        activation='elu',
         kernel_size=(5, 5),
         strides=(1, 1),
         kernel_initializer=RandomNormal(mean=0.0, stddev=0.1, seed=seed),
         bias_initializer='zeros',
         # kernel_regularizer=regularizer,
-        name='conv1'
+        name='conv1',
         )(input_img)
     pool1 = MaxPool2D(
         pool_size=(4, 4),
@@ -92,7 +92,7 @@ def create_model(learning_rate=1e-1, seed=None):
         )(conv1)
     conv2 = Conv2D(
         filters=64,
-        activation='relu',
+        activation='elu',
         kernel_size=(5, 5),
         strides=(1, 1),
         kernel_initializer=RandomNormal(mean=0.0, stddev=0.1, seed=seed),
@@ -108,7 +108,7 @@ def create_model(learning_rate=1e-1, seed=None):
         )(conv2)
     conv3 = Conv2D(
         filters=96,
-        activation='relu',
+        activation='elu',
         kernel_size=(5, 5),
         strides=(1, 1),
         kernel_initializer=RandomNormal(mean=0.0, stddev=0.01, seed=seed),
@@ -133,16 +133,19 @@ def create_model(learning_rate=1e-1, seed=None):
     # inner product 1
     dense1 = Dense(
         units=100,
-        activation='tanh',
+        activation='elu',
         kernel_initializer=glorot_uniform(seed=seed),
         bias_initializer='zeros',
         kernel_regularizer=regularizer,
-        name='fc1'
+        name='fc1',
+
         )(batch_norm)
+
+    # drop = Dropout(0.3)(dense1)
 
     dense2 = Dense(
         units=50,
-        activation='tanh',
+        activation='elu',
         kernel_initializer=glorot_uniform(seed=seed),
         bias_initializer='zeros',
         kernel_regularizer=regularizer,
@@ -154,8 +157,8 @@ def create_model(learning_rate=1e-1, seed=None):
     # inner product 2
     dense3 = Dense(
         units=2,
+        activation='linear',
         kernel_initializer=glorot_uniform(seed=seed),
-        activation='tanh',
         bias_initializer='zeros',
         name='fc3'
         )(drop)

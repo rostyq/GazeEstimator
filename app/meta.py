@@ -1,4 +1,4 @@
-from app import ExperimentParser
+from app import SessionReader
 from app import Person
 import numpy as np
 import os
@@ -7,9 +7,14 @@ from tqdm import tqdm
 
 def get_data_coord(data, sep=','):
     result = ''
-    for axis, value in data.items():
-        value = str(int(value)) if not value % 1 else format(value, '.9f')
-        result += value + sep
+    if isinstance(data, dict):
+        for axis, value in data.items():
+            value = str(int(value)) if not value % 1 else format(value, '.9f')
+            result += value + sep
+    elif isinstance(data, list):
+        for axis, value in zip('XYZ', data):
+            value = str(int(value)) if not value % 1 else format(value, '.9f')
+            result += value + sep
     return result
 
 
@@ -29,6 +34,11 @@ def get_line(data, title=False, sep=','):
                         result += key + str(i) + axis + sep
                 else:
                     result += get_data_coord(item, sep=sep)
+        elif isinstance(value, int):
+            if title:
+                result += key + sep
+            else:
+                result += str(value) + sep
         else:
             raise Exception
     return result[:-1]
@@ -69,12 +79,14 @@ def form_data(snapshot, face_detector, scene):
 
     person_kinect.set_gazes_to_mark(snapshot['gaze'])
 
-    person_kinect.raw_dlib_landmarks = persons_dlib[0].raw_dlib_landmarks
+    if persons_dlib:
+        person_kinect.raw_dlib_landmarks = persons_dlib[0].raw_dlib_landmarks
+    else:
+        return None
 
     dlib_landmarks = {key: to_xyz_dict(person_kinect.raw_dlib_landmarks[value]) for key, value in dlib_indices.items()}
     kinect_landmarks = {key: to_xyz_dict(snapshot['data']['face_points'][value]) for key, value in
                         kinect_indices.items()}
-
     for eye in ['left', 'right']:
         true_gaze = norm(person_kinect.get_eye_gaze(eye))
         data = snapshot['data']['est_gazes']
@@ -87,19 +99,20 @@ def form_data(snapshot, face_detector, scene):
     return data
 
 
-def write_meta_data(session_path, output_path, face_detector, scene, markers):
+def write_meta_data(session_path, output_path, face_detector, scene, markers, markers_idx):
 
     session_code = os.path.split(session_path)[-1]
 
-    parser = ExperimentParser(session_code=session_code)
-    parser.fit(session_path, scene)
+    parser = SessionReader()
+    parser.fit(session_code, session_path, scene.cams)
     markers = np.array(markers)
 
     csv_data = ''
     write_title = True
 
     # iterate on data
-    for marker, ((frames, data), i) in zip(markers, parser.snapshots_iterate(progress_bar=True)):
+    for idx, marker, ((frames, data), i) in zip(markers_idx, markers, parser.snapshots_iterate(progress_bar=True)):
+
         snapshot = {
             'frames': frames,
             'data': data,
@@ -108,15 +121,39 @@ def write_meta_data(session_path, output_path, face_detector, scene, markers):
 
         data = form_data(snapshot, face_detector=face_detector, scene=scene)
 
-        line = get_line(data)
-        # write title if first line
-        if write_title:
-            title = get_line(data, title=True)
-            csv_data += title + '\n'
-            write_title = False
+        if data:
+            data['markerId'] = int(idx)
+            line = get_line(data)
 
-        csv_data += line + '\n'
+            # write title if first line
+            if write_title:
+                title = get_line(data, title=True)
+                csv_data += title + '\n'
+                write_title = False
+
+            csv_data += line + '\n'
 
     # write data
-    with open(os.path.join(output_path, session_code + '.csv'), 'w') as file:
+    with open(os.path.join(output_path, session_code, 'result.csv'), 'w') as file:
         file.write(csv_data)
+
+
+def meta(scene, face_detector, dataset_path, markers_json, output_path=None):
+
+    if not output_path:
+        output_path = dataset_path
+
+    markers = []
+    markers_idx = []
+    counter = 0
+    for i in range(3):
+        for j in range(8):
+            marker = markers_json.get(f'wall_{i}_dot_{j+1}')
+            if marker:
+                markers.extend([marker] * 100)
+                markers_idx.extend([counter] * 100)
+                counter += 1
+
+    for session in sorted(os.listdir(dataset_path)):
+        session_path = os.path.join(dataset_path, session)
+        write_meta_data(session_path, output_path, face_detector, scene, markers, markers_idx)

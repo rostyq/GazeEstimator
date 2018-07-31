@@ -4,7 +4,7 @@ import os.path
 # from app.estimation import GazeNet
 from app.device.screen import Screen
 from app.device.camera import Camera
-from app.parser import ExperimentParser
+from app.parser import SessionReader
 from app.estimation.persondetector import PersonDetector
 from app.frame import Frame
 from app.actor import Person
@@ -43,34 +43,38 @@ class Scene:
                 'cams': {name: cam.to_dict() for name, cam in self.cams.items()}}
 
 
-def create_learning_dataset(save_path, parser, face_detector, scene, indices=None, gaze=None):
-    save_path = Path.join(save_path, 'normalized_data', parser.session_code)
+def create_learning_dataset(save_path, sess_reader, face_detector, scene, indices=None, markers=None):
+    save_path = Path.join(save_path, 'normalized_data', sess_reader.session_code)
     if not os.path.exists(save_path):
         os.makedirs(save_path, exist_ok=True)
+    print(save_path)
 
     learning_data = {'dataset': [], 'scene': scene.to_dict()}
-    for (frames, data), index in parser.snapshots_iterate(indices=indices, progress_bar=True):
+    for ((frames, data), index), marker in zip(sess_reader.snapshots_iterate(indices=indices, progress_bar=True), markers):
         if data['face_points']:
             frame_basler = frames['basler']
-            actor_kinect = Person('kinect', origin=scene.origin)
-            actor_kinect.set_kinect_landmarks3d(data['face_points'])
-            # if len(actors_basler) == 0:
-            #     continue
-            # actor_basler = actors_basler[0]
+            # actor_kinect = Person('kinect', origin=scene.origin)
+            # actor_kinect.set_kinect_landmarks3d(data['face_points'])
+            actors_basler = face_detector.detect_persons(frame_basler, scene.origin)
+            if len(actors_basler) == 0:
+                continue
+            actor_basler = actors_basler[0]
             # actor_basler.set_landmarks3d_gazes(data['gazes'], scene.screens['wall'])
-            gazes = {'left': gaze,
-                    'right': gaze}
-            actor_kinect.set_landmarks3d_gazes(gazes, scene.screens['wall'])
+            # real_gazes = {'left': gaze,
+                          # 'right': gaze}
+            actor_basler.set_gazes_to_mark(marker)
+            # actor_kinect.set_landmarks3d_gazes(gazes, scene.screens['wall'])
 
-            right_eye_frame, left_eye_frame = frame_basler.extract_eyes_from_person(actor_kinect,
+            right_eye_frame, left_eye_frame = frame_basler.extract_eyes_from_person(actor_basler,
                                                                                     resolution=(120, 72),
                                                                                     equalize_hist=True,
-                                                                                    to_grayscale=True)
+                                                                                    to_grayscale=True,
+                                                                                    remove_specularity=True)
 
             cv2.imwrite(Path.join(save_path, f'{index}_left.png'), left_eye_frame)
             cv2.imwrite(Path.join(save_path, f'{index}_right.png'), right_eye_frame)
 
-            learning_data['dataset'].append(actor_kinect.to_learning_dataset(f'{index}_left.png',
+            learning_data['dataset'].append(actor_basler.to_learning_dataset(f'{index}_left.png',
                                                                               f'{index}_right.png',
                                                                               scene.cams['basler']))
 
