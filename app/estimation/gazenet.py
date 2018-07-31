@@ -23,7 +23,9 @@ def prepare(eye_image, head_pose):
     eye_image_tensor: Image 1x36x60x1, array-like with type float32
     head_pose_tensor: Vector, ndarray[[float, float, float]]
     """
-    return [reshape(eye_image, (-1, 36, 60, 1)) / 255, pose3Dto2D(reshape(head_pose, (-1, 3)))]
+    result = [reshape(eye_image, (-1, 72, 120, 1)) / 255, gaze3Dto2D(reshape(head_pose, (-1, 3)))]
+    # print(gaze3Dto2D(reshape(head_pose, (-1, 3))))
+    return result
 
 
 def postprocess(predicted_gaze_tensor):
@@ -38,7 +40,7 @@ def postprocess(predicted_gaze_tensor):
     --------
     predicted_gaze_vector: ndarray[float, float, float]
     """
-    return reshape(gaze2Dto3D(predicted_gaze_tensor), (3,))
+    return reshape(gaze2Dto3D(predicted_gaze_tensor), (1, 3))
 
 
 class GazeNet:
@@ -52,30 +54,22 @@ class GazeNet:
                                 compile=True)
         return self
 
-    def train(self, images, poses, gazes, epochs, batch_size, path_to_save, create_new=False, val_split=0.8, **kwargs):
+    def train(self, path_to_save, create_new=False, create_dict=None, sess_name=None, save_period=100, **kwargs):
         if create_new:
-            self.model = create_model(**kwargs)
-        callbacks = create_callbacks(path_to_save)
+            if create_dict is None:
+                create_dict = {}
+            self.model = create_model(**create_dict)
 
+        path_to_save = os.path.join(path_to_save, sess_name)
         if not os.path.exists(path_to_save):
             os.makedirs(path_to_save)
 
-        split = int(images.shape[0] * val_split)
-        input_train = prepare(images[:split, :], poses[:split, :])
-        gazes_train = gaze3Dto2D(gazes[:split, :])
-        validation_data = (prepare(images[split:, :], poses[split:, :]), gaze3Dto2D(gazes[split:, :]))
+        callbacks = create_callbacks(path_to_save=path_to_save, save_period=save_period)
 
         try:
-            self.model.fit(x=input_train,
-                           y=gazes_train,
-                           batch_size=batch_size,
-                           verbose=1,
-                           epochs=epochs,
-                           validation_data=validation_data,
-                           callbacks=callbacks)
+            return self.model.fit(callbacks=callbacks, **kwargs)
         finally:
-            self.model.save(f'{path_to_save}/model_last.h5')
-        return self
+            self.model.save(os.path.join(path_to_save, 'model_last.h5'))
 
     def score(self, input_data, gazes, batch_size):
         return self.model.evaluate(prepare(*input_data), gaze3Dto2D(gazes), batch_size=batch_size)

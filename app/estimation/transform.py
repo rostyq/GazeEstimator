@@ -64,3 +64,10 @@ def pose3Dto2D(vectors):
     yaw = np.arctan2(Zv[0], Zv[2])  # yaw
 
     return np.column_stack((yaw, pitch))
+
+
+def angles_between_vectors(vectors1, vectors2):
+    vectors1 = vectors1/np.linalg.norm(vectors1, axis=1).reshape(-1, 1)
+    vectors2 = vectors2/np.linalg.norm(vectors2, axis=1).reshape(-1, 1)
+    return np.arccos(np.sum(np.multiply(vectors1, vectors2), axis=1)).reshape(-1, 1)
+

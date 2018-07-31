@@ -3,12 +3,16 @@ from numpy import array
 from numpy import sqrt
 from numpy import cross, dot
 from numpy import zeros
+from numpy import uint8
 from numpy.linalg import solve
 from cv2 import copyMakeBorder, BORDER_CONSTANT
 from app.frame import Frame
 
+
 def plane_line_intersection(line_points, plane_points):
-    ''' Compute intersection point of plane and lineself.
+
+    """
+    Compute intersection point of plane and lineself.
     Parameter line_points consists of two points and stands to determine
     line's equesion:
         (x - x_1)/(x_2 - x_1) =
@@ -18,7 +22,7 @@ def plane_line_intersection(line_points, plane_points):
     plane's equasion:
         A*x + B*y + C*z = D.
     This function returns 3D coordinates of intersection point.
-    '''
+    """
 
     line_point_1 = array(line_points[0]).reshape(3)
     line_point_2 = array(line_points[1]).reshape(3)
@@ -98,14 +102,15 @@ class Screen(SceneObj):
         intersection_origin = plane_line_intersection(line_points_origin, wall_points_origin)
         return intersection_origin
 
-    def generate_image_with_circles(self, points, padding=10, labels=None, colors=None):
-        image = zeros((self.resolution[0], self.resolution[1], 3), dtype='uint8')
+    def generate_image_with_circles(self, points, padding=10, labels=None, colors=None, image=None):
+        if image is None:
+            image = zeros((self.resolution[0], self.resolution[1], 3), dtype=uint8)
         image = copyMakeBorder(image, padding, padding, padding, padding, BORDER_CONSTANT)
         image[:, padding:padding+3], \
         image[:, -3-padding:-padding], \
         image[padding:padding+3, :], \
         image[-3-padding:-padding, :] = [255] * 4
-        Frame.draw_points(image, points+padding, radius=40)
+        Frame.draw_points(image, points+padding, colors, radius=30)
         if labels:
-            Frame.draw_labels(image, labels, points+padding, colors)
+            Frame.draw_labels(image, labels, points+padding, colors, size=2)
         return image

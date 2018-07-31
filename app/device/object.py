@@ -47,10 +47,7 @@ class SceneObj:
     #     self.translation = (matrix[:3, 3] / self.to_m[scale]).reshape(3, 1)
     #     self.rotation = (Rodrigues(matrix[:3, :3])[0]).reshape(3, 1)
     #     return self
-    
-    
-    # Functions below are wrong! 
-    # Use extrinsic matrices instead separated rotation and translation vectors!
+
     def vectors_to_self(self, vectors):
         return inv(self.get_rotation_matrix()) @ (vectors.reshape(3, -1) - self.translation.reshape(3, 1))
 

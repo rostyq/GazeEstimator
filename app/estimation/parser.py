@@ -1,7 +1,19 @@
 from json import load
 from cv2 import imread
 from cv2 import cvtColor
+from cv2 import flip as cv2flip
 from cv2 import COLOR_BGR2GRAY
+
+from numpy.random import permutation
+from numpy import array
+from numpy import fliplr
+from numpy import tile
+from os import path
+
+from app.estimation.transform import gaze3Dto2D
+from app.estimation.transform import pose3Dto2D
+from app.estimation.transform import angles_between_vectors
+
 
 def get_item(data: dict, path_list: list):
     key = path_list.pop()
@@ -63,6 +75,8 @@ class DatasetParser:
     __TEST = ['{eye}', '{index}']
     __EYES = ['left', 'right']
 
+    __FLIP = array([-1, 1, 1])
+
     def __init__(self, images, gazes, poses):
         """
 
@@ -115,7 +129,7 @@ class DatasetParser:
     def _check_eye(self, eye):
         assert eye in self.__EYES, 'Wrong eye. There are only `left` and `right`.'
 
-    def get_image(self, index, eye, **kwargs):
+    def get_image(self, index, eye, flip=False):
         """
         Load specific image of an eye.
 
@@ -133,21 +147,28 @@ class DatasetParser:
         image : array-like
         """
         self._check_eye(eye)
-        path_to_image = self.path_to_images+get_item(
-            self.data,
-            get_path_list(
-                self.images,
-                index=index,
-                eye=eye
+        path_to_image = path.join(
+            self.path_to_images,
+            get_item(
+                self.data,
+                get_path_list(
+                    self.images,
+                    index=index,
+                    eye=eye
+                )
             )
         )
-        image = cvtColor(imread(path_to_image, **kwargs), COLOR_BGR2GRAY)
+        image = imread(path_to_image)
         if image is None:
             raise Exception(f'Image not found in {path_to_image}')
         else:
-            return image
+            image = cvtColor(image, COLOR_BGR2GRAY)
+            if flip:
+                return cv2flip(image, 1)
+            else:
+                return image
 
-    def get_pose(self, index):
+    def get_pose(self, index, flip=False):
         """
         Returns pose vector of specific sample.
 
@@ -160,9 +181,13 @@ class DatasetParser:
         -------
         pose : list[float, float, float]
         """
-        return get_item(self.data, get_path_list(self.poses, index=index))
+        vector = array(get_item(self.data, get_path_list(self.poses, index=index))).reshape(3,)
+        if flip:
+            return vector * self.__FLIP
+        else:
+            return vector
 
-    def get_gaze(self, index, eye):
+    def get_gaze(self, index, eye, flip=False):
         """
         Returns gaze vector of specific sample.
 
@@ -178,9 +203,13 @@ class DatasetParser:
         gaze : list[float, float, float]
         """
         self._check_eye(eye)
-        return get_item(self.data, get_path_list(self.gazes, eye=eye, index=index))
+        vector = array(get_item(self.data, get_path_list(self.gazes, eye=eye, index=index))).reshape(3,)
+        if flip:
+            return vector * self.__FLIP
+        else:
+            return vector
 
-    def get_poses_array(self, indices=None):
+    def get_poses_array(self, indices=None, **kwargs):
         """
         Returns batch of pose vectors of samples which number in `indices`.
 
@@ -193,9 +222,9 @@ class DatasetParser:
         -------
         poses : list[list[float, float, float]]
         """
-        return [self.get_pose(index) for index in self._check_indices(indices)]
+        return [self.get_pose(index, **kwargs) for index in self._check_indices(indices)]
 
-    def get_gazes_array(self, eye, indices=None):
+    def get_gazes_array(self, eye, indices=None, **kwargs):
         """
         Returns batch of gaze vectors of samples which number in `indices`.
 
@@ -211,7 +240,7 @@ class DatasetParser:
         gazes : list[list[float, float, float]]
         """
         self._check_eye(eye)
-        return [self.get_gaze(index, eye=eye) for index in self._check_indices(indices)]
+        return [self.get_gaze(index, eye=eye, **kwargs) for index in self._check_indices(indices)]
 
     def get_images_array(self, eye, indices=None, **kwargs):
         """
@@ -230,3 +259,20 @@ class DatasetParser:
         """
         self._check_eye(eye)
         return [self.get_image(index, eye, **kwargs) for index in self._check_indices(indices)]
+
+    def get_full_data(self, indices=None):
+
+        eyes, poses, gazes = [], [], []
+
+        for flip, eye in enumerate(self.__EYES):
+            # flip = 0
+            eyes.extend(self.get_images_array(eye=eye, flip=bool(flip), indices=indices))
+            poses.extend(self.get_poses_array(indices=indices, flip=bool(flip)))
+            gazes.extend(self.get_gazes_array(eye=eye, indices=indices, flip=bool(flip)))
+
+        eyes = (array(eyes, subok=True).reshape(-1, 72, 120, 1) / 255)
+        angles = angles_between_vectors(array(gazes, subok=True), array(poses, subok=True))
+        gazes = gaze3Dto2D(array(gazes, subok=True))
+        poses = gaze3Dto2D(array(poses, subok=True))
+        # poses = tile(pose3Dto2D(array(poses, subok=True)).mean(axis=0), (gazes.shape[0], 1))
+        return eyes, poses, gazes, angles
