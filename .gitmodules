@@ -1,0 +1,3 @@
+[submodule "app/specularity_removal"]
+	path = app/specularity_removal
+	url = https://github.com/muratkrty/specularity-removal.git
